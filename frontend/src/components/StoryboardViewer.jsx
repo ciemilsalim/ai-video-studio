@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import ConfirmDeleteModal from './ConfirmDeleteModal';
 import {
   addScene,
   updateScene,
   deleteScene,
+  duplicateScene,
   reorderScenes,
   generateSceneNarration,
   generateAllNarration,
@@ -28,12 +30,19 @@ export default function StoryboardViewer({
     narration_text: '',
     target_duration_seconds: 4.0,
     visual_prompt: '',
-    footage_path: ''
+    footage_path: '',
+    duration_mode: 'loop'
   });
   const [generatingTtsId, setGeneratingTtsId] = useState(null);
   const [batchTtsLoading, setBatchTtsLoading] = useState(false);
   const [generatingVisualId, setGeneratingVisualId] = useState(null);
   const [visualErrorMap, setVisualErrorMap] = useState({});
+
+  // Safety confirmation modals state
+  const [sceneToDelete, setSceneToDelete] = useState(null);
+  const [sceneToDetach, setSceneToDetach] = useState(null);
+  const [duplicatingSceneId, setDuplicatingSceneId] = useState(null);
+  const [reorderLoading, setReorderLoading] = useState(false);
 
   if (!project) return null;
 
@@ -46,7 +55,8 @@ export default function StoryboardViewer({
       narration_text: scene.narration_text || '',
       target_duration_seconds: scene.target_duration_seconds || 4.0,
       visual_prompt: scene.visual_prompt || (scene.shots?.[0]?.visual_prompt || ''),
-      footage_path: scene.footage_path || ''
+      footage_path: scene.footage_path || '',
+      duration_mode: scene.duration_mode || 'loop'
     });
   };
 
@@ -60,19 +70,27 @@ export default function StoryboardViewer({
     }
   };
 
-  const handleDeleteScene = async (sceneId) => {
-    if (!window.confirm('Hapus adegan ini dari storyboard?')) return;
+  const handleConfirmDeleteScene = async () => {
+    if (!sceneToDelete) return;
+    const updatedProject = await deleteScene(project.id, sceneToDelete.scene_id);
+    onProjectUpdated(updatedProject);
+  };
+
+  const handleDuplicateScene = async (sceneId) => {
     try {
-      const updatedProject = await deleteScene(project.id, sceneId);
+      setDuplicatingSceneId(sceneId);
+      const updatedProject = await duplicateScene(project.id, sceneId);
       onProjectUpdated(updatedProject);
     } catch (err) {
-      alert(`Gagal menghapus adegan: ${err.message}`);
+      alert(`Gagal menduplikasi adegan: ${err.message}`);
+    } finally {
+      setDuplicatingSceneId(null);
     }
   };
 
   const handleMoveScene = async (index, direction) => {
     const targetIndex = index + direction;
-    if (targetIndex < 0 || targetIndex >= scenes.length) return;
+    if (targetIndex < 0 || targetIndex >= scenes.length || reorderLoading) return;
 
     const newOrder = [...scenes];
     const temp = newOrder[index];
@@ -81,10 +99,13 @@ export default function StoryboardViewer({
 
     const sceneIds = newOrder.map((s) => s.scene_id);
     try {
+      setReorderLoading(true);
       const updatedProject = await reorderScenes(project.id, sceneIds);
       onProjectUpdated(updatedProject);
     } catch (err) {
       alert(`Gagal mengurutkan adegan: ${err.message}`);
+    } finally {
+      setReorderLoading(false);
     }
   };
 
@@ -101,7 +122,8 @@ export default function StoryboardViewer({
         narration_text: '',
         target_duration_seconds: 4.0,
         visual_prompt: '',
-        footage_path: ''
+        footage_path: '',
+        duration_mode: 'loop'
       });
     } catch (err) {
       alert(`Gagal menambah adegan: ${err.message}`);
@@ -138,16 +160,12 @@ export default function StoryboardViewer({
     }
   };
 
-  const handleDetachFootage = async (sceneId) => {
-    if (!window.confirm('Lepas visual dari adegan ini?')) return;
-    try {
-      await detachAsset(project.id, sceneId);
-      const res = await fetch(`/api/projects/${project.id}`);
-      const updated = await res.json();
-      onProjectUpdated(updated);
-    } catch (err) {
-      alert(`Gagal melepas footage: ${err.message}`);
-    }
+  const handleConfirmDetachFootage = async () => {
+    if (!sceneToDetach) return;
+    await detachAsset(project.id, sceneToDetach.scene_id);
+    const res = await fetch(`/api/projects/${project.id}`);
+    const updated = await res.json();
+    onProjectUpdated(updated);
   };
 
   const handleGenerateVisual = async (sceneId) => {
@@ -274,12 +292,25 @@ export default function StoryboardViewer({
                   type="number"
                   step="0.5"
                   min="1"
-                  max="60"
+                  max="120"
                   className="form-input"
                   value={newSceneForm.target_duration_seconds}
                   onChange={(e) => setNewSceneForm({ ...newSceneForm, target_duration_seconds: parseFloat(e.target.value) || 4.0 })}
                 />
               </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Mode Penyesuaian Durasi Footage</label>
+              <select
+                className="form-select"
+                value={newSceneForm.duration_mode || 'loop'}
+                onChange={(e) => setNewSceneForm({ ...newSceneForm, duration_mode: e.target.value })}
+              >
+                <option value="loop">🔁 Loop Footage (Ulangi footage jika durasi adegan lebih panjang)</option>
+                <option value="freeze_frame">❄️ Tahan Frame Terakhir (Putar footage 1x, lalu tahan frame terakhir tanpa jeda hitam)</option>
+                <option value="fit_scene">📐 Sesuaikan Durasi Scene (Samakan target durasi dengan footage sumber)</option>
+              </select>
             </div>
 
             <div className="form-group">
@@ -339,15 +370,30 @@ export default function StoryboardViewer({
                         />
                       </div>
                       <div>
-                        <label className="form-label">Durasi (s)</label>
+                        <label className="form-label">Target Durasi (s)</label>
                         <input
                           type="number"
                           step="0.5"
+                          min="1"
+                          max="120"
                           className="form-input"
                           value={editForm.target_duration_seconds}
                           onChange={(e) => setEditForm({ ...editForm, target_duration_seconds: parseFloat(e.target.value) || 4.0 })}
                         />
                       </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">Mode Penyesuaian Durasi Footage</label>
+                      <select
+                        className="form-select"
+                        value={editForm.duration_mode || 'loop'}
+                        onChange={(e) => setEditForm({ ...editForm, duration_mode: e.target.value })}
+                      >
+                        <option value="loop">🔁 Loop Footage (Ulangi jika durasi adegan lebih panjang)</option>
+                        <option value="freeze_frame">❄️ Tahan Frame Terakhir (Freeze frame akhir tanpa jeda hitam)</option>
+                        <option value="fit_scene">📐 Sesuaikan Durasi Scene (Samakan dengan durasi footage)</option>
+                      </select>
                     </div>
 
                     <div className="form-group">
@@ -392,7 +438,7 @@ export default function StoryboardViewer({
                         <button
                           className="btn btn-secondary"
                           style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
-                          disabled={idx === 0}
+                          disabled={idx === 0 || reorderLoading}
                           title="Pindahkan ke atas"
                           onClick={() => handleMoveScene(idx, -1)}
                         >
@@ -401,7 +447,7 @@ export default function StoryboardViewer({
                         <button
                           className="btn btn-secondary"
                           style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
-                          disabled={idx === scenes.length - 1}
+                          disabled={idx === scenes.length - 1 || reorderLoading}
                           title="Pindahkan ke bawah"
                           onClick={() => handleMoveScene(idx, 1)}
                         >
@@ -415,9 +461,19 @@ export default function StoryboardViewer({
                           Edit
                         </button>
                         <button
+                          className="btn btn-secondary"
+                          style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem' }}
+                          disabled={duplicatingSceneId === scene.scene_id}
+                          title="Duplikasi adegan ini"
+                          onClick={() => handleDuplicateScene(scene.scene_id)}
+                        >
+                          {duplicatingSceneId === scene.scene_id ? '⏳' : '📑 Duplikat'}
+                        </button>
+                        <button
                           className="btn btn-danger"
                           style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem' }}
-                          onClick={() => handleDeleteScene(scene.scene_id)}
+                          onClick={() => setSceneToDelete(scene)}
+                          title="Hapus adegan dari storyboard"
                         >
                           Hapus
                         </button>
@@ -550,19 +606,46 @@ export default function StoryboardViewer({
                                   </span>
 
                                   {isVisualReady && (
-                                    <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
-                                      {scene.footage_path.split(/[\\/]/).pop()}
-                                    </span>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                                      <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
+                                        {scene.footage_path.split(/[\\/]/).pop()}
+                                      </span>
+                                      {isVideo && (
+                                        <span
+                                          style={{
+                                            fontSize: '0.68rem',
+                                            padding: '0.1rem 0.4rem',
+                                            borderRadius: '3px',
+                                            background: 'rgba(99, 102, 241, 0.15)',
+                                            color: '#a5b4fc',
+                                            border: '1px solid rgba(99, 102, 241, 0.3)',
+                                            fontFamily: 'var(--font-mono)'
+                                          }}
+                                        >
+                                          {scene.duration_mode === 'freeze_frame'
+                                            ? '❄️ Tahan Frame Akhir'
+                                            : scene.duration_mode === 'fit_scene'
+                                            ? '📐 Sesuaikan Durasi'
+                                            : '🔁 Loop Footage'}
+                                        </span>
+                                      )}
+                                    </div>
                                   )}
                                 </div>
 
                                 <div style={{ fontSize: '0.74rem', color: hasFailed ? '#fca5a5' : 'var(--text-muted)' }}>
                                   {isProcessing && 'Mesin prosedural lokal sedang merender frame video 1080x1920 30 FPS...'}
-                                  {isVisualReady && isVideo && (attachedAsset?.duration_sec ? `Durasi sumber: ${attachedAsset.duration_sec}s | Terhubung ke adegan` : 'Footage video vertikal terhubung')}
+                                  {isVisualReady && isVideo && (attachedAsset?.duration_sec ? `Durasi sumber: ${attachedAsset.duration_sec}s | Target scene: ${scene.target_duration_seconds}s` : 'Footage video vertikal terhubung')}
                                   {isVisualReady && !isVideo && 'Gambar still vertikal akan ditampilkan penuh sepanjang durasi adegan'}
                                   {hasFailed && (errorMessage || 'Terjadi kesalahan saat memproses visual')}
                                   {!isVisualReady && !isProcessing && !hasFailed && 'Adegan belum memiliki visual footage. Pilih aset lokal atau generate visual sinematik.'}
                                 </div>
+
+                                {scene.narration_audio_duration_sec && scene.narration_audio_duration_sec > scene.target_duration_seconds && (
+                                  <div style={{ marginTop: '0.35rem', fontSize: '0.72rem', color: '#fbbf24', background: 'rgba(245, 158, 11, 0.1)', padding: '0.25rem 0.5rem', borderRadius: '3px', border: '1px solid rgba(245, 158, 11, 0.25)' }}>
+                                    ⚠️ Narasi audio ({scene.narration_audio_duration_sec}s) melebihi durasi target ({scene.target_duration_seconds}s). Engine assembly akan otomatis memperpanjang segmen adegan agar audio tidak terpotong.
+                                  </div>
+                                )}
                               </div>
                             </div>
 
@@ -580,7 +663,7 @@ export default function StoryboardViewer({
                                   <button
                                     className="btn btn-secondary"
                                     style={{ fontSize: '0.7rem', padding: '0.25rem 0.55rem', color: '#f87171', borderColor: 'rgba(248, 113, 113, 0.3)' }}
-                                    onClick={() => handleDetachFootage(scene.scene_id)}
+                                    onClick={() => setSceneToDetach(scene)}
                                   >
                                     Lepas
                                   </button>
@@ -648,6 +731,28 @@ export default function StoryboardViewer({
             );
           })}
         </div>
+
+        {/* Delete Scene Confirmation Modal */}
+        <ConfirmDeleteModal
+          isOpen={!!sceneToDelete}
+          onClose={() => setSceneToDelete(null)}
+          onConfirm={handleConfirmDeleteScene}
+          title="Hapus Adegan Storyboard"
+          itemType="Adegan"
+          itemName={sceneToDelete ? `Adegan #${sceneToDelete.scene_number}: ${sceneToDelete.title}` : ''}
+          details="Adegan ini beserta naskah narasi, prompt visual, dan konfigurasi motion graphic-nya akan dihapus permanen dari storyboard proyek."
+        />
+
+        {/* Detach Footage Confirmation Modal */}
+        <ConfirmDeleteModal
+          isOpen={!!sceneToDetach}
+          onClose={() => setSceneToDetach(null)}
+          onConfirm={handleConfirmDetachFootage}
+          title="Lepas Media Visual dari Adegan"
+          itemType="Tautan Media"
+          itemName={sceneToDetach ? `Adegan #${sceneToDetach.scene_number}: ${sceneToDetach.title}` : ''}
+          details="Tautan visual akan dilepas dari adegan ini. File media asli tetap tersimpan aman di Pustaka Aset proyek."
+        />
       </div>
     </div>
   );

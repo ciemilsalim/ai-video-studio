@@ -247,17 +247,35 @@ class AssemblyService:
         if has_real_footage:
             # Scale & crop user footage or image to 1080x1920 without distortion
             ext = Path(scene.footage_path).suffix.lower()
+            duration_mode = getattr(scene, "duration_mode", "loop") or "loop"
+
             if ext in {".png", ".jpg", ".jpeg", ".webp"}:
                 video_input_args = [
                     "-loop", "1",
                     "-i", str(scene.footage_path)
                 ]
+                filter_v = "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1[v]"
             else:
-                video_input_args = [
-                    "-stream_loop", "-1", # loop if footage is shorter than scene
-                    "-i", str(scene.footage_path)
-                ]
-            filter_v = "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1[v]"
+                # Video footage handling
+                if duration_mode == "freeze_frame":
+                    # Play once, hold last frame until scene end (no black screen)
+                    video_input_args = [
+                        "-i", str(scene.footage_path)
+                    ]
+                    filter_v = f"scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1,tpad=stop_mode=clone:stop_duration={duration_sec + 5.0}[v]"
+                elif duration_mode == "fit_scene":
+                    # Video played directly; if narration duration extends scene, hold last frame
+                    video_input_args = [
+                        "-i", str(scene.footage_path)
+                    ]
+                    filter_v = f"scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1,tpad=stop_mode=clone:stop_duration={duration_sec + 5.0}[v]"
+                else:
+                    # Default: loop footage seamlessly if scene duration is longer
+                    video_input_args = [
+                        "-stream_loop", "-1",
+                        "-i", str(scene.footage_path)
+                    ]
+                    filter_v = "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1[v]"
         else:
             temp_placeholder = self.generate_scene_placeholder_card(
                 scene=scene,

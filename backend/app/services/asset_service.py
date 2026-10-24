@@ -4,7 +4,7 @@ import uuid
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Dict, Any, List, Optional, Tuple, Union
 from datetime import datetime, timezone
 from PIL import Image
 import cv2
@@ -74,10 +74,11 @@ class AssetService:
 
         return src_path
 
-    def probe_media_metadata(self, file_path: Path) -> Dict[str, Any]:
+    def probe_media_metadata(self, file_path: Union[Path, str]) -> Dict[str, Any]:
         """
         Extracts width, height, fps, duration, and codec from video or image.
         """
+        file_path = Path(file_path)
         ext = file_path.suffix.lower()
         metadata = {
             "width": None,
@@ -99,7 +100,7 @@ class AssetService:
                 metadata["duration_sec"] = round(fc / fps, 2) if fps > 0 else 0.0
                 cap.release()
 
-            # Probe codec via FFmpeg
+            # Probe codec, duration fallback, and audio stream via FFmpeg
             ffmpeg_bin = resolve_ffmpeg_binary()
             if ffmpeg_bin and os.path.exists(ffmpeg_bin):
                 try:
@@ -107,6 +108,13 @@ class AssetService:
                     m = re.search(r"Video:\s*(\w+)", res.stderr)
                     if m:
                         metadata["codec"] = m.group(1).lower()
+                    if not metadata["duration_sec"] or metadata["duration_sec"] <= 0:
+                        m_dur = re.search(r"Duration:\s*(\d+):(\d+):(\d+\.?\d*)", res.stderr)
+                        if m_dur:
+                            h, mn, s = float(m_dur.group(1)), float(m_dur.group(2)), float(m_dur.group(3))
+                            metadata["duration_sec"] = round(h * 3600 + mn * 60 + s, 2)
+                    m_aud = re.search(r"Audio:\s*(\w+)", res.stderr)
+                    metadata["has_audio"] = bool(m_aud)
                 except Exception:
                     pass
         elif ext in self.ALLOWED_IMAGE_EXTS:
@@ -294,27 +302,49 @@ class AssetService:
         if not asset:
             raise AssetNotFoundError(f"Aset '{asset_id}' tidak ditemukan.")
 
-        # Detach from any linked scene
-        if asset.scene_id:
-            scene = next((s for s in project.storyboard.scenes if s.scene_id == asset.scene_id), None)
-            if scene and scene.asset_id == asset_id:
-                scene.asset_id = None
-                scene.footage_path = None
-                scene.visual_status = "missing"
-                scene.production_status = "narrated" if scene.narration_audio_path else "draft"
+        # Detach from all scenes in this project that reference this asset
+        for s in project.storyboard.scenes:
+            if s.asset_id == asset_id or (asset.file_path and s.footage_path == asset.file_path):
+                s.asset_id = None
+                s.footage_path = None
+                s.visual_status = "missing"
+                s.production_status = "narrated" if s.narration_audio_path else "draft"
 
-        # Safely remove files
-        if asset.file_path and os.path.isfile(asset.file_path):
-            try:
-                os.remove(asset.file_path)
-            except Exception:
-                pass
+        # Check if file is referenced by other projects before deleting from disk
+        is_shared = False
+        try:
+            for other_p_info in storage_service.list_projects():
+                other_id = other_p_info.get("id")
+                if other_id and other_id != project_id:
+                    other_proj = storage_service.get_project(other_id)
+                    if other_proj:
+                        for oa in other_proj.assets:
+                            if oa.file_path == asset.file_path:
+                                is_shared = True
+                                break
+                        if not is_shared:
+                            for os_scene in other_proj.storyboard.scenes:
+                                if os_scene.footage_path == asset.file_path:
+                                    is_shared = True
+                                    break
+                if is_shared:
+                    break
+        except Exception:
+            is_shared = True  # Safety fallback
 
-        if asset.thumbnail_path and os.path.isfile(asset.thumbnail_path):
-            try:
-                os.remove(asset.thumbnail_path)
-            except Exception:
-                pass
+        # Safely remove files only if not shared
+        if not is_shared:
+            if asset.file_path and os.path.isfile(asset.file_path):
+                try:
+                    os.remove(asset.file_path)
+                except Exception:
+                    pass
+
+            if asset.thumbnail_path and os.path.isfile(asset.thumbnail_path):
+                try:
+                    os.remove(asset.thumbnail_path)
+                except Exception:
+                    pass
 
         project.assets = [a for a in project.assets if a.asset_id != asset_id]
         storage_service.save_project(project)

@@ -1,11 +1,14 @@
 import json
 import re
+import uuid
 import tempfile
 from pathlib import Path
 from typing import List, Optional
 from datetime import datetime, timezone
 from app.config import PROJECTS_DIR
 from app.models.project import VideoProject, ProjectCreateRequest, Storyboard, Scene, Shot
+
+PROTECTED_PROJECT_IDS = {"misteri-gunung-merapi", "misteri-peradaban-nusantara"}
 
 def slugify(text: str) -> str:
     text = text.lower().strip()
@@ -103,7 +106,35 @@ class StorageService:
 
         return self.save_project(project)
 
+    def duplicate_project(self, project_id: str) -> Optional[VideoProject]:
+        source = self.get_project(project_id)
+        if not source:
+            return None
+
+        base_id = f"{source.id}-salinan"
+        new_id = base_id
+        counter = 1
+        while self._project_file(new_id).exists():
+            new_id = f"{base_id}-{counter}"
+            counter += 1
+
+        data = source.model_dump()
+        data["id"] = new_id
+        data["title"] = f"{source.title} (Salinan)"
+        now_str = datetime.now(timezone.utc).isoformat()
+        data["created_at"] = now_str
+        data["updated_at"] = now_str
+
+        # Generate unique scene IDs for the clone so scene references don't clash
+        for sc in data.get("storyboard", {}).get("scenes", []):
+            sc["scene_id"] = f"scene-{uuid.uuid4().hex[:6]}"
+
+        cloned_project = VideoProject(**data)
+        return self.save_project(cloned_project)
+
     def delete_project(self, project_id: str) -> bool:
+        if project_id in PROTECTED_PROJECT_IDS:
+            raise PermissionError(f"Proyek '{project_id}' adalah proyek contoh sistem yang dilindungi dan tidak dapat dihapus.")
         filepath = self._project_file(project_id)
         if filepath.is_file():
             filepath.unlink()

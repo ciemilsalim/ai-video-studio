@@ -38,11 +38,38 @@ export async function updateProject(id, projectData) {
   return res.json();
 }
 
+export async function renameProject(id, payload) {
+  const res = await fetch(`${API_BASE}/projects/${id}/rename`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Failed to rename project' }));
+    throw new Error(err.detail || `Gagal mengubah nama proyek ${id}`);
+  }
+  return res.json();
+}
+
+export async function duplicateProject(id) {
+  const res = await fetch(`${API_BASE}/projects/${id}/duplicate`, {
+    method: 'POST'
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Failed to duplicate project' }));
+    throw new Error(err.detail || `Gagal menduplikasi proyek ${id}`);
+  }
+  return res.json();
+}
+
 export async function deleteProject(id) {
   const res = await fetch(`${API_BASE}/projects/${id}`, {
     method: 'DELETE'
   });
-  if (!res.ok) throw new Error(`Failed to delete project ${id}`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Failed to delete project' }));
+    throw new Error(err.detail || `Gagal menghapus proyek ${id}`);
+  }
   return res.json();
 }
 
@@ -112,6 +139,17 @@ export async function updateScene(projectId, sceneId, sceneData) {
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: 'Failed to update scene' }));
     throw new Error(err.detail || 'Gagal mengubah adegan');
+  }
+  return res.json();
+}
+
+export async function duplicateScene(projectId, sceneId) {
+  const res = await fetch(`${API_BASE}/projects/${projectId}/storyboard/scenes/${sceneId}/duplicate`, {
+    method: 'POST'
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Failed to duplicate scene' }));
+    throw new Error(err.detail || 'Gagal menduplikasi adegan');
   }
   return res.json();
 }

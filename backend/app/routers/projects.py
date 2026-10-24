@@ -49,6 +49,12 @@ def get_project(project_id: str):
         raise HTTPException(status_code=404, detail=f"Project '{project_id}' not found")
     return project
 
+from pydantic import BaseModel, Field
+
+class ProjectRenameRequest(BaseModel):
+    title: str = Field(..., min_length=1)
+    description: Optional[str] = None
+
 @router.put("/{project_id}", response_model=VideoProject)
 def update_project(project_id: str, project_update: VideoProject):
     existing = storage_service.get_project(project_id)
@@ -58,12 +64,32 @@ def update_project(project_id: str, project_update: VideoProject):
     recalculate_storyboard_duration(project_update)
     return storage_service.save_project(project_update)
 
+@router.patch("/{project_id}/rename", response_model=VideoProject)
+def rename_project(project_id: str, req: ProjectRenameRequest):
+    project = storage_service.get_project(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail=f"Project '{project_id}' not found")
+    project.title = req.title.strip()
+    if req.description is not None:
+        project.description = req.description.strip()
+    return storage_service.save_project(project)
+
+@router.post("/{project_id}/duplicate", response_model=VideoProject)
+def duplicate_project(project_id: str):
+    cloned = storage_service.duplicate_project(project_id)
+    if not cloned:
+        raise HTTPException(status_code=404, detail=f"Project '{project_id}' not found")
+    return cloned
+
 @router.delete("/{project_id}")
 def delete_project(project_id: str):
-    success = storage_service.delete_project(project_id)
-    if not success:
-        raise HTTPException(status_code=404, detail=f"Project '{project_id}' not found")
-    return {"status": "success", "message": f"Project '{project_id}' deleted successfully"}
+    try:
+        success = storage_service.delete_project(project_id)
+        if not success:
+            raise HTTPException(status_code=404, detail=f"Project '{project_id}' not found")
+        return {"status": "success", "message": f"Project '{project_id}' deleted successfully"}
+    except PermissionError as pe:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(pe))
 
 
 # -----------------------------------------------------------------------------
@@ -87,10 +113,44 @@ def add_storyboard_scene(project_id: str, req: SceneCreateRequest):
         target_duration_seconds=req.target_duration_seconds,
         visual_prompt=req.visual_prompt or "",
         footage_path=req.footage_path,
+        duration_mode=req.duration_mode or "loop",
         production_status="draft"
     )
 
     project.storyboard.scenes.append(new_scene)
+    recalculate_storyboard_duration(project)
+    return storage_service.save_project(project)
+
+@router.post("/{project_id}/storyboard/scenes/{scene_id}/duplicate", response_model=VideoProject)
+def duplicate_storyboard_scene(project_id: str, scene_id: str):
+    project = storage_service.get_project(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail=f"Project '{project_id}' not found")
+
+    scene = next((s for s in project.storyboard.scenes if s.scene_id == scene_id), None)
+    if not scene:
+        raise HTTPException(status_code=404, detail=f"Adegan '{scene_id}' tidak ditemukan.")
+
+    new_scene_id = f"scene-{uuid.uuid4().hex[:6]}"
+    cloned_scene_data = scene.model_dump()
+    cloned_scene_data["scene_id"] = new_scene_id
+    cloned_scene_data["scene_number"] = len(project.storyboard.scenes) + 1
+    cloned_scene_data["title"] = f"{scene.title} (Duplikat)"
+    cloned_scene_data["narration_audio_path"] = None
+    cloned_scene_data["narration_audio_duration_sec"] = None
+    cloned_scene_data["production_status"] = "draft"
+
+    # Clone motion overlays with unique IDs
+    cloned_overlays = []
+    for ov in cloned_scene_data.get("motion_overlays", []):
+        ov_clone = dict(ov)
+        ov_clone["overlay_id"] = f"mgo-{uuid.uuid4().hex[:8]}"
+        ov_clone["scene_id"] = new_scene_id
+        cloned_overlays.append(ov_clone)
+    cloned_scene_data["motion_overlays"] = cloned_overlays
+
+    cloned_scene = Scene(**cloned_scene_data)
+    project.storyboard.scenes.append(cloned_scene)
     recalculate_storyboard_duration(project)
     return storage_service.save_project(project)
 
@@ -114,6 +174,8 @@ def update_storyboard_scene(project_id: str, scene_id: str, req: SceneUpdateRequ
         scene.visual_prompt = req.visual_prompt
     if req.footage_path is not None:
         scene.footage_path = req.footage_path
+    if req.duration_mode is not None:
+        scene.duration_mode = req.duration_mode
     if req.production_status is not None:
         scene.production_status = req.production_status
     if req.visual_status is not None:
@@ -137,6 +199,11 @@ def delete_storyboard_scene(project_id: str, scene_id: str):
 
     if len(project.storyboard.scenes) == initial_len:
         raise HTTPException(status_code=404, detail=f"Adegan '{scene_id}' tidak ditemukan.")
+
+    # Safely detach any assets referencing this scene_id
+    for a in project.assets:
+        if a.scene_id == scene_id:
+            a.scene_id = None
 
     recalculate_storyboard_duration(project)
     return storage_service.save_project(project)

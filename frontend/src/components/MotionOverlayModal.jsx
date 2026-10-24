@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ConfirmDeleteModal from './ConfirmDeleteModal';
 import {
   fetchMotionTemplates,
   fetchSceneOverlays,
@@ -19,6 +20,7 @@ export default function MotionOverlayModal({
   const [overlays, setOverlays] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [overlayToDelete, setOverlayToDelete] = useState(null);
 
   // Form state
   const [selectedTemplateId, setSelectedTemplateId] = useState('kinetic_title');
@@ -106,14 +108,15 @@ export default function MotionOverlayModal({
     }
   };
 
-  const handleDeleteOverlay = async (overlayId) => {
-    if (!window.confirm('Hapus grafis animasi overlay ini?')) return;
+  const handleConfirmDeleteOverlay = async () => {
+    if (!overlayToDelete) return;
     try {
-      await deleteSceneOverlay(projectId, scene.scene_id, overlayId);
+      await deleteSceneOverlay(projectId, scene.scene_id, overlayToDelete.overlay_id);
       await loadData();
       if (onSceneUpdated) onSceneUpdated();
     } catch (err) {
       alert(`Gagal menghapus overlay: ${err.message}`);
+      throw err;
     }
   };
 
@@ -233,7 +236,8 @@ export default function MotionOverlayModal({
                         <button
                           className="btn btn-danger"
                           style={{ fontSize: '0.72rem', padding: '0.25rem 0.55rem' }}
-                          onClick={() => handleDeleteOverlay(ovl.overlay_id)}
+                          onClick={() => setOverlayToDelete(ovl)}
+                          title="Hapus grafis animasi overlay ini"
                         >
                           Hapus
                         </button>
@@ -562,6 +566,17 @@ export default function MotionOverlayModal({
             </div>
           </form>
         </div>
+
+        {/* Delete Overlay Confirmation Modal */}
+        <ConfirmDeleteModal
+          isOpen={!!overlayToDelete}
+          onClose={() => setOverlayToDelete(null)}
+          onConfirm={handleConfirmDeleteOverlay}
+          title="Hapus Motion Graphics Overlay"
+          itemType="Overlay Grafis"
+          itemName={overlayToDelete ? `${overlayToDelete.template_id} (${overlayToDelete.start_time}s - ${overlayToDelete.start_time + overlayToDelete.duration}s)` : ''}
+          details="Lapisan grafis animasi ini akan dihapus dari adegan storyboard."
+        />
       </div>
     </div>
   );

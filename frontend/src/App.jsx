@@ -8,12 +8,16 @@ import RenderModal from './components/RenderModal';
 import AssetManagerModal from './components/AssetManagerModal';
 import MotionOverlayModal from './components/MotionOverlayModal';
 import UserGuide from './components/UserGuide';
+import ConfirmDeleteModal from './components/ConfirmDeleteModal';
+import RenameProjectModal from './components/RenameProjectModal';
 import {
   fetchHealth,
   fetchProjects,
   fetchProject,
   createProject,
   deleteProject,
+  duplicateProject,
+  renameProject,
   renderProjectDemo,
   renderStandaloneDemo,
   assembleProjectVideo
@@ -32,6 +36,8 @@ export default function App() {
   const [activeAssetProject, setActiveAssetProject] = useState(null);
   const [assetTargetSceneId, setAssetTargetSceneId] = useState(null);
   const [activeMotionScene, setActiveMotionScene] = useState(null);
+  const [projectToDelete, setProjectToDelete] = useState(null);
+  const [projectToRename, setProjectToRename] = useState(null);
 
   // Render modal state
   const [isRenderOpen, setIsRenderOpen] = useState(false);
@@ -73,13 +79,31 @@ export default function App() {
     }
   };
 
-  const handleDeleteProject = async (id) => {
-    if (!window.confirm(`Yakin ingin menghapus proyek ini?`)) return;
+  const handleConfirmDeleteProject = async () => {
+    if (!projectToDelete) return;
+    await deleteProject(projectToDelete.id);
+    if (activeStoryboardProject && activeStoryboardProject.id === projectToDelete.id) {
+      setActiveStoryboardProject(null);
+    }
+    await initApp();
+  };
+
+  const handleRenameProject = async (newTitle, newDesc) => {
+    if (!projectToRename) return;
+    const updated = await renameProject(projectToRename.id, { title: newTitle, description: newDesc });
+    if (activeStoryboardProject && activeStoryboardProject.id === projectToRename.id) {
+      setActiveStoryboardProject(updated);
+    }
+    await initApp();
+  };
+
+  const handleDuplicateProject = async (proj) => {
     try {
-      await deleteProject(id);
+      const cloned = await duplicateProject(proj.id);
       await initApp();
+      alert(`Proyek berhasil diduplikasi: "${cloned.title}"`);
     } catch (err) {
-      alert(`Gagal menghapus: ${err.message}`);
+      alert(`Gagal menduplikasi proyek: ${err.message}`);
     }
   };
 
@@ -231,7 +255,9 @@ export default function App() {
                   project={proj}
                   onViewStoryboard={handleViewStoryboard}
                   onOpenPromptStudio={(id) => setActivePromptStudioId(id)}
-                  onDeleteProject={handleDeleteProject}
+                  onDeleteProject={(p) => setProjectToDelete(p)}
+                  onRenameProject={(p) => setProjectToRename(p)}
+                  onDuplicateProject={handleDuplicateProject}
                   onOpenRender={handleOpenRender}
                   onOpenAssembly={handleOpenAssembly}
                   onOpenAssetManager={handleOpenAssetManager}
@@ -329,6 +355,25 @@ export default function App() {
         renderResult={renderResult}
         onTriggerRender={handleTriggerRender}
         isAssembly={isAssemblyMode}
+      />
+
+      <ConfirmDeleteModal
+        isOpen={!!projectToDelete}
+        onClose={() => setProjectToDelete(null)}
+        onConfirm={handleConfirmDeleteProject}
+        title="Hapus Proyek Dokumenter"
+        itemType="Proyek"
+        itemName={projectToDelete ? `${projectToDelete.title} (${projectToDelete.id})` : ''}
+        details="Seluruh file storyboard, rekaman suara, dan konfigurasi proyek ini akan dihapus permanen dari sistem."
+        isProtected={['misteri-gunung-merapi', 'misteri-peradaban-nusantara'].includes(projectToDelete?.id)}
+        protectedMessage="Proyek ini adalah data contoh sistem bawaan yang dilindungi. Untuk memodifikasi atau bereksperimen dengan aman, gunakan tombol Duplikasi (📑)."
+      />
+
+      <RenameProjectModal
+        isOpen={!!projectToRename}
+        onClose={() => setProjectToRename(null)}
+        project={projectToRename}
+        onRename={handleRenameProject}
       />
     </div>
   );

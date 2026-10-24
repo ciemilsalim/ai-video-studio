@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ConfirmDeleteModal from './ConfirmDeleteModal';
 import {
   fetchAssets,
   importAsset,
@@ -25,8 +26,9 @@ export default function AssetManagerModal({
   const [uploadFile, setUploadFile] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
 
-  // Preview state
+  // Preview & Delete state
   const [previewAsset, setPreviewAsset] = useState(null);
+  const [assetToDelete, setAssetToDelete] = useState(null);
 
   useEffect(() => {
     if (isOpen && project?.id) {
@@ -137,12 +139,12 @@ export default function AssetManagerModal({
     }
   };
 
-  const handleDelete = async (assetId) => {
-    if (!window.confirm('Hapus aset ini dari pustaka proyek? File di disk akan dihapus.')) return;
+  const handleConfirmDeleteAsset = async () => {
+    if (!assetToDelete) return;
     try {
       setActionLoading(true);
       setError(null);
-      await deleteAsset(project.id, assetId);
+      await deleteAsset(project.id, assetToDelete.asset_id);
       await loadAssets();
       if (onProjectUpdated) {
         const res = await fetch(`/api/projects/${project.id}`);
@@ -151,6 +153,7 @@ export default function AssetManagerModal({
       }
     } catch (err) {
       setError(err.message || 'Gagal menghapus aset');
+      throw err;
     } finally {
       setActionLoading(false);
     }
@@ -473,11 +476,11 @@ export default function AssetManagerModal({
                                     Adegan #{sc.scene_number}: {sc.title}
                                   </option>
                                 ))}
-                              </select>
-                            </div>
-                          )}
+                                </select>
+                              </div>
+                            )}
 
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <button
                               className="btn btn-secondary"
                               style={{ fontSize: '0.72rem', padding: '0.25rem 0.5rem', color: '#38bdf8' }}
@@ -488,7 +491,8 @@ export default function AssetManagerModal({
                             <button
                               className="btn btn-danger"
                               style={{ fontSize: '0.72rem', padding: '0.25rem 0.5rem' }}
-                              onClick={() => handleDelete(asset.asset_id)}
+                              onClick={() => setAssetToDelete(asset)}
+                              title="Hapus aset media dari pustaka proyek"
                             >
                               Hapus
                             </button>
@@ -566,6 +570,21 @@ export default function AssetManagerModal({
             </div>
           </div>
         )}
+
+        {/* Delete Asset Confirmation Modal */}
+        <ConfirmDeleteModal
+          isOpen={!!assetToDelete}
+          onClose={() => setAssetToDelete(null)}
+          onConfirm={handleConfirmDeleteAsset}
+          title="Hapus Aset Media"
+          itemType="Aset Media"
+          itemName={assetToDelete ? `${assetToDelete.filename} (${formatFileSize(assetToDelete.size_bytes)})` : ''}
+          details={
+            assetToDelete?.scene_id
+              ? `Aset ini saat ini terhubung ke Adegan. Jika dihapus, tautan visual adegan tersebut akan dilepas dan file di disk akan dihapus.`
+              : 'File media ini akan dihapus permanen dari pustaka proyek dan disk penyimpanan.'
+          }
+        />
       </div>
     </div>
   );

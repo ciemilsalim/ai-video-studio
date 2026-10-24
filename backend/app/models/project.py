@@ -115,6 +115,7 @@ class Scene(BaseModel):
     production_status: Literal["draft", "narrated", "footage_ready", "assembled", "ready"] = "draft"
     visual_status: Literal["ready", "processing", "missing", "failed"] = "missing"
     visual_job_id: Optional[str] = None
+    duration_mode: Literal["loop", "freeze_frame", "fit_scene"] = "loop"
     motion_overlays: List[MotionOverlay] = Field(default_factory=list)
     shots: List[Shot] = Field(default_factory=list)
 
@@ -145,6 +146,7 @@ class SceneCreateRequest(BaseModel):
     visual_prompt: Optional[str] = ""
     footage_path: Optional[str] = None
     asset_id: Optional[str] = None
+    duration_mode: Optional[Literal["loop", "freeze_frame", "fit_scene"]] = "loop"
 
 class SceneUpdateRequest(BaseModel):
     title: Optional[str] = None
@@ -153,6 +155,7 @@ class SceneUpdateRequest(BaseModel):
     visual_prompt: Optional[str] = None
     footage_path: Optional[str] = None
     asset_id: Optional[str] = None
+    duration_mode: Optional[Literal["loop", "freeze_frame", "fit_scene"]] = None
     production_status: Optional[Literal["draft", "narrated", "footage_ready", "assembled", "ready"]] = None
     visual_status: Optional[Literal["ready", "processing", "missing", "failed"]] = None
     visual_job_id: Optional[str] = None
