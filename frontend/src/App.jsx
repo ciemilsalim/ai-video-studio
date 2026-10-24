@@ -4,7 +4,8 @@ import ProjectCard from './components/ProjectCard';
 import CreateProjectModal from './components/CreateProjectModal';
 import StoryboardViewer from './components/StoryboardViewer';
 import PromptStudioModal from './components/PromptStudioModal';
-import { fetchHealth, fetchProjects, fetchProject, createProject, deleteProject } from './services/api';
+import RenderModal from './components/RenderModal';
+import { fetchHealth, fetchProjects, fetchProject, createProject, deleteProject, renderProjectDemo, renderStandaloneDemo } from './services/api';
 
 export default function App() {
   const [health, setHealth] = useState(null);
@@ -15,6 +16,12 @@ export default function App() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [activeStoryboardProject, setActiveStoryboardProject] = useState(null);
   const [activePromptStudioId, setActivePromptStudioId] = useState(null);
+
+  // Render modal state
+  const [isRenderOpen, setIsRenderOpen] = useState(false);
+  const [renderTarget, setRenderTarget] = useState(null); // project object or null (for standalone)
+  const [renderStatus, setRenderStatus] = useState('idle'); // idle, rendering, success, error
+  const [renderResult, setRenderResult] = useState(null);
 
   useEffect(() => {
     initApp();
@@ -59,6 +66,41 @@ export default function App() {
     }
   };
 
+  const handleOpenRender = (project) => {
+    setRenderTarget(project);
+    setRenderStatus('idle');
+    setRenderResult(null);
+    setIsRenderOpen(true);
+  };
+
+  const handleOpenStandaloneRender = () => {
+    setRenderTarget(null);
+    setRenderStatus('idle');
+    setRenderResult(null);
+    setIsRenderOpen(true);
+  };
+
+  const handleTriggerRender = async (durationSec) => {
+    try {
+      setRenderStatus('rendering');
+      let res;
+      if (renderTarget) {
+        res = await renderProjectDemo(renderTarget.id, durationSec);
+      } else {
+        res = await renderStandaloneDemo(
+          'Demonstrasi Video Vertikal 1080x1920',
+          'Uji Coba Langsung Mesin FFmpeg 7.1',
+          durationSec
+        );
+      }
+      setRenderResult(res);
+      setRenderStatus('success');
+    } catch (err) {
+      setRenderResult({ error: err.message });
+      setRenderStatus('error');
+    }
+  };
+
   return (
     <div className="app-container">
       <Header health={health} onNewProjectClick={() => setIsCreateOpen(true)} />
@@ -72,7 +114,17 @@ export default function App() {
               naskah terstruktur, motion graphics deklaratif, dan perakitan FFmpeg 1080×1920 (9:16).
             </p>
           </div>
-          <div>
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <button
+              className="btn btn-secondary"
+              style={{ borderColor: 'var(--accent-success)', color: '#34d399' }}
+              onClick={handleOpenStandaloneRender}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+              Uji Render 9:16 Cepat
+            </button>
             <button className="btn btn-primary" onClick={() => setIsCreateOpen(true)}>
               + Mulai Proyek Baru
             </button>
@@ -110,6 +162,7 @@ export default function App() {
                   onViewStoryboard={handleViewStoryboard}
                   onOpenPromptStudio={(id) => setActivePromptStudioId(id)}
                   onDeleteProject={handleDeleteProject}
+                  onOpenRender={handleOpenRender}
                 />
               ))}
             </div>
@@ -140,6 +193,15 @@ export default function App() {
           onClose={() => setActivePromptStudioId(null)}
         />
       )}
+
+      <RenderModal
+        isOpen={isRenderOpen}
+        onClose={() => setIsRenderOpen(false)}
+        projectName={renderTarget ? renderTarget.title : 'Demonstrasi Standalone FFmpeg'}
+        renderStatus={renderStatus}
+        renderResult={renderResult}
+        onTriggerRender={handleTriggerRender}
+      />
     </div>
   );
 }

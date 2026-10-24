@@ -13,7 +13,19 @@
 
 ---
 
-## Phase 2: Storyboard & Google Flow Prompt Studio
+## Phase 2A: Local Vertical Video Rendering (Completed & Verified)
+- [x] Subprocess FFmpeg rendering service without shell command injection (`render_service.py`).
+- [x] Deterministic 1080×1920 graphic overlay with Pillow (branding, glassmorphic box, accent bar, metadata).
+- [x] Vertical 1080×1920 (9:16) MP4 production with H.264 video and stereo AAC audio.
+- [x] Non-blocking FastAPI endpoint integration (`/api/renders/demo` and `/api/renders/project/{id}`).
+- [x] Streamable MP4 playback endpoint (`/api/renders/{filename}`).
+- [x] Dashboard UI integration with `RenderModal` featuring interactive vertical video player.
+- [x] Dual validation via OpenCV `VideoCapture` and FFmpeg stream inspection.
+- [x] 100% test coverage for input validation, missing FFmpeg handling, real render, and API endpoints (12 passed).
+
+---
+
+## Phase 2B: Storyboard & Google Flow Prompt Studio
 - [ ] Visual Storyboard Editor with scene cards, shot order drag-and-drop, and timing controls.
 - [ ] Google Flow Prompt Studio:
   - Subject, action, environment descriptors.

@@ -57,3 +57,36 @@ export async function fetchFlowPromptsMarkdown(projectId) {
   if (!res.ok) throw new Error(`Failed to export Flow prompts markdown`);
   return res.json();
 }
+
+export async function renderProjectDemo(projectId, durationSec = 5.0, fps = 30) {
+  const res = await fetch(`${API_BASE}/renders/project/${projectId}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ duration_sec: durationSec, fps })
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({ detail: 'Render request failed' }));
+    throw new Error(errorData.detail || 'Gagal merender video');
+  }
+  return res.json();
+}
+
+export async function renderStandaloneDemo(title, subtitle = null, durationSec = 5.0, fps = 30) {
+  const res = await fetch(`${API_BASE}/renders/demo`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title, subtitle, duration_sec: durationSec, fps })
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({ detail: 'Render request failed' }));
+    throw new Error(errorData.detail || 'Gagal merender video demo');
+  }
+  return res.json();
+}
+
+export async function fetchRenders() {
+  const res = await fetch(`${API_BASE}/renders`);
+  if (!res.ok) throw new Error('Failed to fetch renders list');
+  return res.json();
+}
+

@@ -18,6 +18,10 @@ dist-ssr/
 backend/data/projects/*.mp4
 backend/data/projects/*.webm
 backend/data/projects/*.wav
+backend/data/renders/
+backend/temp/
+*.mp4
+*.webm
 output/
 temp/
 logs/

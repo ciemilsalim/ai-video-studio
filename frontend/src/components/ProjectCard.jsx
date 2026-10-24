@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function ProjectCard({ project, onViewStoryboard, onOpenPromptStudio, onDeleteProject }) {
+export default function ProjectCard({ project, onViewStoryboard, onOpenPromptStudio, onDeleteProject, onOpenRender }) {
   return (
     <div className="project-card">
       <div>
@@ -27,6 +27,12 @@ export default function ProjectCard({ project, onViewStoryboard, onOpenPromptStu
         </div>
 
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <button className="btn btn-primary" style={{ padding: '0.5rem 0.85rem', background: 'linear-gradient(135deg, #10b981, #059669)', borderColor: '#059669' }} title="Render Demo Vertikal 1080x1920" onClick={() => onOpenRender(project)}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+            Render 9:16
+          </button>
           <button className="btn btn-secondary" style={{ flex: 1, padding: '0.5rem 0.75rem' }} onClick={() => onViewStoryboard(project.id)}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
@@ -39,7 +45,7 @@ export default function ProjectCard({ project, onViewStoryboard, onOpenPromptStu
               <circle cx="12" cy="12" r="10"></circle>
               <polygon points="10 8 16 12 10 16 10 8"></polygon>
             </svg>
-            Flow Prompts
+            Flow
           </button>
           <button className="btn btn-danger" style={{ padding: '0.5rem 0.75rem' }} title="Hapus Proyek" onClick={() => onDeleteProject(project.id)}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

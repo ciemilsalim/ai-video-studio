@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import APP_SETTINGS
-from app.routers import health, projects, flow_prompts
+from app.routers import health, projects, flow_prompts, renders
 
 app = FastAPI(
     title=APP_SETTINGS["app_name"],
@@ -22,6 +22,7 @@ app.add_middleware(
 app.include_router(health.router)
 app.include_router(projects.router)
 app.include_router(flow_prompts.router)
+app.include_router(renders.router)
 
 @app.get("/")
 def root():
