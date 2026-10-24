@@ -116,6 +116,8 @@ def update_storyboard_scene(project_id: str, scene_id: str, req: SceneUpdateRequ
         scene.footage_path = req.footage_path
     if req.production_status is not None:
         scene.production_status = req.production_status
+    if req.motion_overlays is not None:
+        scene.motion_overlays = req.motion_overlays
 
     recalculate_storyboard_duration(project)
     return storage_service.save_project(project)

@@ -252,4 +252,73 @@ export async function deleteAsset(projectId, assetId) {
   return res.json();
 }
 
+export async function fetchMotionTemplates() {
+  const res = await fetch(`${API_BASE}/motion-graphics/templates`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Failed to fetch motion templates' }));
+    throw new Error(err.detail || 'Gagal memuat template motion graphics');
+  }
+  return res.json();
+}
+
+export async function fetchSceneOverlays(projectId, sceneId) {
+  const res = await fetch(`${API_BASE}/projects/${projectId}/scenes/${sceneId}/overlays`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Failed to fetch scene overlays' }));
+    throw new Error(err.detail || 'Gagal memuat daftar overlay adegan');
+  }
+  return res.json();
+}
+
+export async function addSceneOverlay(projectId, sceneId, overlayData) {
+  const res = await fetch(`${API_BASE}/projects/${projectId}/scenes/${sceneId}/overlays`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(overlayData)
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Failed to add overlay' }));
+    throw new Error(err.detail || 'Gagal menambah overlay adegan');
+  }
+  return res.json();
+}
+
+export async function updateSceneOverlay(projectId, sceneId, overlayId, overlayData) {
+  const res = await fetch(`${API_BASE}/projects/${projectId}/scenes/${sceneId}/overlays/${overlayId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(overlayData)
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Failed to update overlay' }));
+    throw new Error(err.detail || 'Gagal mengubah overlay');
+  }
+  return res.json();
+}
+
+export async function deleteSceneOverlay(projectId, sceneId, overlayId) {
+  const res = await fetch(`${API_BASE}/projects/${projectId}/scenes/${sceneId}/overlays/${overlayId}`, {
+    method: 'DELETE'
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Failed to delete overlay' }));
+    throw new Error(err.detail || 'Gagal menghapus overlay');
+  }
+  return res.json();
+}
+
+export function getOverlayPreviewUrl(templateId, content = {}, t = 1.0) {
+  const params = new URLSearchParams({
+    template_id: templateId,
+    t: t.toString()
+  });
+  for (const [k, v] of Object.entries(content)) {
+    if (v !== undefined && v !== null && v !== '') {
+      params.append(k, v.toString());
+    }
+  }
+  return `${API_BASE}/motion-graphics/preview?${params.toString()}`;
+}
+
+
 

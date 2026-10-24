@@ -1,4 +1,4 @@
-from typing import List, Optional, Literal
+from typing import List, Optional, Literal, Dict, Any
 from pydantic import BaseModel, Field
 from datetime import datetime, timezone
 
@@ -12,6 +12,44 @@ class MotionGraphic(BaseModel):
     type: Literal["none", "titlecard", "lower_third", "quote_box", "statistic_callout"] = "none"
     headline: Optional[str] = None
     subtext: Optional[str] = None
+
+class MotionOverlay(BaseModel):
+    overlay_id: str
+    scene_id: str
+    template_id: Literal["kinetic_title", "stat_card", "timeline_event", "investigation_hud"]
+    start_time: float = Field(default=0.0, ge=0.0)
+    duration: float = Field(default=3.0, gt=0.0)
+    layer: int = Field(default=1, ge=1)
+    position: Literal["center", "bottom", "top", "top_left", "bottom_left", "center_left"] = "center"
+    style: Dict[str, Any] = Field(default_factory=dict)
+    animation_in: Literal["fade", "slide_up", "wipe_right", "glitch_in"] = "fade"
+    animation_out: Literal["fade", "slide_down", "wipe_left", "none"] = "fade"
+    content: Dict[str, Any] = Field(default_factory=dict)
+    enabled: bool = True
+
+class OverlayCreateRequest(BaseModel):
+    template_id: Literal["kinetic_title", "stat_card", "timeline_event", "investigation_hud"]
+    start_time: float = Field(default=0.0, ge=0.0)
+    duration: float = Field(default=3.0, gt=0.0)
+    layer: int = Field(default=1, ge=1)
+    position: Literal["center", "bottom", "top", "top_left", "bottom_left", "center_left"] = "center"
+    style: Optional[Dict[str, Any]] = None
+    animation_in: Literal["fade", "slide_up", "wipe_right", "glitch_in"] = "fade"
+    animation_out: Literal["fade", "slide_down", "wipe_left", "none"] = "fade"
+    content: Dict[str, Any] = Field(default_factory=dict)
+    enabled: bool = True
+
+class OverlayUpdateRequest(BaseModel):
+    template_id: Optional[Literal["kinetic_title", "stat_card", "timeline_event", "investigation_hud"]] = None
+    start_time: Optional[float] = Field(default=None, ge=0.0)
+    duration: Optional[float] = Field(default=None, gt=0.0)
+    layer: Optional[int] = Field(default=None, ge=1)
+    position: Optional[Literal["center", "bottom", "top", "top_left", "bottom_left", "center_left"]] = None
+    style: Optional[Dict[str, Any]] = None
+    animation_in: Optional[Literal["fade", "slide_up", "wipe_right", "glitch_in"]] = None
+    animation_out: Optional[Literal["fade", "slide_down", "wipe_left", "none"]] = None
+    content: Optional[Dict[str, Any]] = None
+    enabled: Optional[bool] = None
 
 class Shot(BaseModel):
     shot_id: str
@@ -74,6 +112,7 @@ class Scene(BaseModel):
     narration_audio_path: Optional[str] = None
     narration_audio_duration_sec: Optional[float] = None
     production_status: Literal["draft", "narrated", "footage_ready", "assembled", "ready"] = "draft"
+    motion_overlays: List[MotionOverlay] = Field(default_factory=list)
     shots: List[Shot] = Field(default_factory=list)
 
     def model_post_init(self, __context):
@@ -106,6 +145,7 @@ class SceneUpdateRequest(BaseModel):
     footage_path: Optional[str] = None
     asset_id: Optional[str] = None
     production_status: Optional[Literal["draft", "narrated", "footage_ready", "assembled", "ready"]] = None
+    motion_overlays: Optional[List[MotionOverlay]] = None
 
 class StoryboardReorderRequest(BaseModel):
     scene_ids: List[str]

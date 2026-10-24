@@ -15,6 +15,7 @@ export default function StoryboardViewer({
   onOpenPromptStudio,
   onOpenAssembly,
   onOpenAssetManager,
+  onOpenMotionOverlay,
   onProjectUpdated
 }) {
   const [editingSceneId, setEditingSceneId] = useState(null);
@@ -460,6 +461,39 @@ export default function StoryboardViewer({
                           </button>
                         )}
                       </div>
+                    </div>
+
+                    {/* Motion Graphics Overlays Status */}
+                    <div style={{ marginTop: '0.5rem', background: (scene.motion_overlays && scene.motion_overlays.length > 0) ? 'rgba(56, 189, 248, 0.08)' : 'rgba(255, 255, 255, 0.02)', border: `1px solid ${(scene.motion_overlays && scene.motion_overlays.length > 0) ? 'rgba(56, 189, 248, 0.3)' : 'rgba(255, 255, 255, 0.08)'}`, borderRadius: 'var(--radius-sm)', padding: '0.65rem 0.85rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', flexWrap: 'wrap' }}>
+                        <span style={{ fontWeight: 700, color: (scene.motion_overlays && scene.motion_overlays.length > 0) ? '#38bdf8' : 'var(--text-dim)' }}>
+                          ✨ Motion Overlays: {(scene.motion_overlays || []).length}
+                        </span>
+                        {scene.motion_overlays && scene.motion_overlays.map((ov, idx) => (
+                          <span
+                            key={ov.overlay_id || idx}
+                            style={{
+                              fontSize: '0.7rem',
+                              padding: '0.1rem 0.4rem',
+                              borderRadius: '3px',
+                              background: ov.enabled ? 'rgba(220, 38, 38, 0.2)' : 'rgba(255,255,255,0.05)',
+                              color: ov.enabled ? '#f87171' : 'var(--text-dim)',
+                              border: `1px solid ${ov.enabled ? 'rgba(220, 38, 38, 0.4)' : 'rgba(255,255,255,0.1)'}`,
+                              fontFamily: 'var(--font-mono)'
+                            }}
+                          >
+                            {ov.template_id} ({ov.start_time}s-{ov.start_time + ov.duration}s)
+                          </span>
+                        ))}
+                      </div>
+
+                      <button
+                        className="btn btn-secondary"
+                        style={{ fontSize: '0.7rem', padding: '0.2rem 0.6rem', borderColor: '#38bdf8', color: '#38bdf8' }}
+                        onClick={() => onOpenMotionOverlay && onOpenMotionOverlay(scene)}
+                      >
+                        ⚡ Kelola Motion Graphics
+                      </button>
                     </div>
                   </div>
                 )}

@@ -6,6 +6,7 @@ import StoryboardViewer from './components/StoryboardViewer';
 import PromptStudioModal from './components/PromptStudioModal';
 import RenderModal from './components/RenderModal';
 import AssetManagerModal from './components/AssetManagerModal';
+import MotionOverlayModal from './components/MotionOverlayModal';
 import {
   fetchHealth,
   fetchProjects,
@@ -28,6 +29,7 @@ export default function App() {
   const [activePromptStudioId, setActivePromptStudioId] = useState(null);
   const [activeAssetProject, setActiveAssetProject] = useState(null);
   const [assetTargetSceneId, setAssetTargetSceneId] = useState(null);
+  const [activeMotionScene, setActiveMotionScene] = useState(null);
 
   // Render modal state
   const [isRenderOpen, setIsRenderOpen] = useState(false);
@@ -231,6 +233,9 @@ export default function App() {
           onOpenAssetManager={(sceneId) => {
             handleOpenAssetManager(activeStoryboardProject, sceneId);
           }}
+          onOpenMotionOverlay={(scene) => {
+            setActiveMotionScene(scene);
+          }}
           onProjectUpdated={(p) => {
             setActiveStoryboardProject(p);
             initApp();
@@ -261,6 +266,26 @@ export default function App() {
         <PromptStudioModal
           projectId={activePromptStudioId}
           onClose={() => setActivePromptStudioId(null)}
+        />
+      )}
+
+      {activeMotionScene && activeStoryboardProject && (
+        <MotionOverlayModal
+          isOpen={!!activeMotionScene}
+          projectId={activeStoryboardProject.id}
+          scene={activeMotionScene}
+          onClose={() => setActiveMotionScene(null)}
+          onOverlaysUpdated={async () => {
+            try {
+              const fresh = await fetchProject(activeStoryboardProject.id);
+              setActiveStoryboardProject(fresh);
+              const freshScene = fresh.storyboard?.scenes?.find(s => s.scene_id === activeMotionScene.scene_id);
+              if (freshScene) setActiveMotionScene(freshScene);
+              initApp();
+            } catch (err) {
+              console.error('Failed refreshing project after overlay update:', err);
+            }
+          }}
         />
       )}
 

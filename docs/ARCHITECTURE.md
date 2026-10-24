@@ -83,6 +83,12 @@ AI Video Studio is a high-performance local production environment for Windows, 
 - `POST /api/assets/{project_id}/detach/{scene_id}` — Detaches an asset from a scene, reverting it to placeholder mode.
 - `DELETE /api/assets/{project_id}/{asset_id}` — Deletes asset media and thumbnail from disk and updates project state.
 - `GET /api/assets/{project_id}/{filename}` — Streams asset video or thumbnail securely with traversal protection.
+- `GET /api/motion-graphics/templates` — Returns catalog of available motion graphics templates, default parameters, and schemas.
+- `GET /api/motion-graphics/preview` — Generates transparent PNG preview frame for a template configuration and time offset.
+- `GET /api/projects/{p_id}/scenes/{s_id}/overlays` — Lists all motion overlays configured for a specific scene.
+- `POST /api/projects/{p_id}/scenes/{s_id}/overlays` — Adds a validated motion graphic overlay to a scene.
+- `PUT /api/projects/{p_id}/scenes/{s_id}/overlays/{o_id}` — Updates overlay timing, content, or enabled status.
+- `DELETE /api/projects/{p_id}/scenes/{s_id}/overlays/{o_id}` — Removes an overlay from a scene.
 
 ---
 
@@ -92,4 +98,19 @@ AI Video Studio is a high-performance local production environment for Windows, 
 - **Sanitization & Traversal Guards:** Filenames and paths are sanitized using regex filtering against directory traversal attacks (`..`, illegal characters).
 - **No Remote URLs:** External URLs (`http://`, `https://`) are strictly rejected by the local asset service.
 - **Size Bounds:** Max 500 MB for video files, max 30 MB for graphic/image assets.
+
+---
+
+## 6. Motion Graphics Engine Architecture
+- **Rendering Pipeline:**
+  1. **Frame Generation:** Python Pillow generates 1080×1920 32-bit RGBA frames calculating animation easing (`ease-in` slide and fade, `ease-out`, and dynamic time elements like blinking REC indicator).
+  2. **Alpha Encoding:** FFmpeg encodes PNG image sequences into QuickTime Animation format (`-c:v qtrle -pix_fmt argb`) within temporary `.mov` containers.
+  3. **Compositing:** FFmpeg applies multi-input overlay filters with `-itsoffset` matching each overlay's `start_time` relative to the scene, ordered by layer.
+  4. **Audio & Duration Preservation:** Video is bounded to the scene's exact duration (`-t duration`) and base audio is preserved via stream copy (`-map 0:a? -c:a copy`).
+- **Investigative Templates:**
+  - `kinetic_title`: Main documentary title reveal with crimson accent bar and archive tag.
+  - `stat_card`: Large metric card with honest data provenance reporting ("SUMBER: BELUM DICANTUMKAN" when absent).
+  - `timeline_event`: Historical period banner and event brief.
+  - `investigation_hud`: Coordinates, evidence catalog number, and REC status indicator.
+- **Clean Fallback:** Scenes without overlays skip rendering entirely, preserving standard assembly performance.
 

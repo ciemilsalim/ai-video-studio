@@ -57,6 +57,34 @@
   - Storyboard scene badges (`✓ Footage Siap` vs `⚡ Mode Placeholder`) with one-click attach/detach buttons.
 - [x] 100% test pass rate across 24 backend tests and successful Vite production build.
 
+## Phase 2D: Reusable Motion Graphics Engine (Completed & Verified)
+- [x] Motion Graphics Data Model (`MotionOverlay`) supporting `overlay_id`, `scene_id`, `template_id`, `start_time`, `duration`, `layer`, `position`, `style`, `animation_in`, `animation_out`, `content`, and `enabled`.
+- [x] Four Reusable Investigative Templates with dark documentary aesthetics:
+  - `kinetic_title`: Bold reveal typography, crimson accent line, classification category tag.
+  - `stat_card`: Large metric numbers, labels, units, and mandatory honest data source provenance.
+  - `timeline_event`: Historical period/date badge, event headline, geographical tag, and detailed briefing.
+  - `investigation_hud`: Coordinates/GPS, evidence tracking code, classification badge, frame reticle, and time-varying blinking REC indicator.
+- [x] High-performance RGBA frame rendering with Pillow at 1080×1920 (ease-in, ease-out, dynamic time-varying elements).
+- [x] Zero-dependency Alpha Video Generation: FFmpeg `-c:v qtrle` QuickTime MOV generation with true 32-bit RGBA transparency.
+- [x] Multi-Layer Compositing Engine (`composite_overlays_on_video`):
+  - Ingests overlays via `-itsoffset {start_time}` with layer ordering.
+  - FFmpeg `[v][ov]overlay=0:0:eof_action=pass` filter graph.
+  - Preserves exact scene target duration and copies audio streams intact (`-map 0:a? -c:a copy`).
+- [x] Safe Storyboard Assembly Integration (`assembly_service.py`):
+  - Fully backward compatible: scenes without overlays bypass overlay rendering with zero overhead.
+  - Assembled video output metadata records `motion_overlays_count`.
+- [x] Motion Graphics REST APIs (`routers/motion_graphics.py`):
+  - `GET /api/motion-graphics/templates` (catalog with schema & defaults).
+  - `GET /api/motion-graphics/preview` (live transparent PNG frame generator for UI preview).
+  - Scene Overlay CRUD: `GET`, `POST`, `PUT`, `DELETE` at `/api/projects/{p_id}/scenes/{s_id}/overlays`.
+- [x] Interactive Frontend Motion Graphics Modal (`MotionOverlayModal.jsx`):
+  - Template selector tabs with visual icons.
+  - Live parameter editing and live frame preview fetching.
+  - Start time, duration, layer, and position configuration.
+  - Overlay list with instant enable/disable toggling and deletion.
+  - Storyboard scene card integration with overlay counters and quick-launch button.
+- [x] 100% test pass rate across 35 backend tests (11 dedicated motion graphics tests) producing real vertical MP4 output.
+
 ---
 
 ## Phase 3: Motion Graphics & SVG / Remotion Engine

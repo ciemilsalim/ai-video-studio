@@ -1,6 +1,7 @@
 import os
 import re
 import uuid
+import shutil
 import subprocess
 from pathlib import Path
 from typing import Dict, Any, List, Optional
@@ -11,6 +12,7 @@ from app.config import RENDERS_DIR, TEMP_DIR, resolve_ffmpeg_binary
 from app.models.project import VideoProject, Scene
 from app.services.render_service import render_service
 from app.services.tts_service import tts_service
+from app.services.motion_graphics_service import motion_graphics_service
 
 class AssemblyServiceError(Exception):
     pass
@@ -273,6 +275,29 @@ class AssemblyService:
                 except Exception:
                     pass
 
+        # Composite motion overlays if defined and enabled
+        enabled_overlays = [o for o in scene.motion_overlays if o.enabled]
+        if enabled_overlays:
+            temp_composited = self.temp_dir / f"mgo_comp_{scene.scene_id}_{uuid.uuid4().hex[:8]}.mp4"
+            try:
+                motion_graphics_service.composite_overlays_on_video(
+                    base_video_path=out_segment_path,
+                    overlays=enabled_overlays,
+                    scene_duration=duration_sec,
+                    output_video_path=temp_composited,
+                    ffmpeg_bin=ffmpeg_bin
+                )
+                if temp_composited.is_file() and temp_composited.stat().st_size > 0:
+                    shutil.move(str(temp_composited), str(out_segment_path))
+            except Exception as e:
+                raise AssemblyServiceError(f"Komposisi motion graphics adegan {scene.scene_number} gagal: {str(e)}")
+            finally:
+                if temp_composited.exists():
+                    try:
+                        temp_composited.unlink()
+                    except Exception:
+                        pass
+
         return out_segment_path
 
     def assemble_project_video_sync(
@@ -357,6 +382,7 @@ class AssemblyService:
 
         real_footage_count = sum(1 for sc in scenes if sc.footage_path and os.path.isfile(sc.footage_path))
         placeholder_count = len(scenes) - real_footage_count
+        motion_overlays_count = sum(len([o for o in sc.motion_overlays if o.enabled]) for sc in scenes)
 
         return {
             "status": "success",
@@ -366,6 +392,7 @@ class AssemblyService:
             "real_footage_scenes_count": real_footage_count,
             "placeholder_scenes_count": placeholder_count,
             "has_placeholders": placeholder_count > 0,
+            "motion_overlays_count": motion_overlays_count,
             "filename": out_filename,
             "output_path": str(final_output_path),
             "web_url": f"/api/renders/{out_filename}",
