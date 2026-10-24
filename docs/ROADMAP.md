@@ -87,6 +87,31 @@
 
 ---
 
+## Phase 2E: Main Visual Generation Pipeline (Completed & Verified)
+- [x] **Root Cause Resolution**:
+  - Identified & resolved missing visual generator by building pluggable `VisualGenerationProvider` architecture.
+  - Fixed image asset ingestion bug in `asset_service.py` where `image_reference` failed to populate `scene.footage_path`.
+  - Added asset fallback resolution in `assembly_service.py` (`scene.asset_id` cross-reference to `project.assets`).
+  - Added strict decodability validation for corrupt/0-byte/missing footage and images prior to rendering.
+- [x] **Provider Architecture (`services/visual_generation_provider.py`)**:
+  - `VisualGenerationProvider` abstract base class defining prompt, duration, resolution, and async job contracts.
+  - `GoogleFlowProvider`: Honestly reports unavailable (no false claims/mock API keys) with guidance on markdown export & local ingest.
+  - `LocalImportVisualProvider`: Validates and binds local video & image assets.
+  - `ProceduralCinematicProvider`: Generates genuine 1080×1920 30 FPS vertical MP4 footage with dynamic camera motion, prompt-based thematic palettes, and floating atmospheric particles (verified frame delta > 0.05).
+  - `VisualGenerationManager`: Handles job states (`pending`, `generating`, `completed`, `failed`), deduplication, retries, and automatic scene binding.
+- [x] **UI Validation (`StoryboardViewer.jsx`)**:
+  - Visual status badges per scene: `✓ Visual Siap (Video / Gambar)`, `⚡ Sedang Memproses`, `⚠️ Belum Tersedia`, `❌ Gagal`.
+  - Thumbnail previews for linked assets.
+  - Direct actions to import media or generate procedural cinematic visual locally.
+  - Pre-assembly confirmation check warning users if any scene lacks real visual footage.
+- [x] **Comprehensive Testing & Evidence**:
+  - 10-point mandatory test suite in `tests/test_visual_generation.py` (all 10 passed).
+  - 46/46 total backend tests passing with 0 regressions.
+  - Full vertical video demonstration generated at `data/renders/demo_phase2e_main_visual.mp4` (11.5s, 1080×1920, 30 FPS CFR, moving footage delta 3.5456, persistent image visual, synced narration, motion graphics).
+
+
+---
+
 ## Phase 3: Motion Graphics & SVG / Remotion Engine
 - [ ] Motion Graphics templates library:
   - Document Titlecards & Chapter Dividers.

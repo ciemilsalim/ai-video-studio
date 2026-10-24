@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import APP_SETTINGS
-from app.routers import health, projects, flow_prompts, renders, audio, assets, motion_graphics
+from app.routers import health, projects, flow_prompts, renders, audio, assets, motion_graphics, visual_generation
 
 app = FastAPI(
     title=APP_SETTINGS["app_name"],
@@ -27,6 +27,7 @@ app.include_router(audio.router)
 app.include_router(assets.router)
 app.include_router(motion_graphics.router)
 app.include_router(motion_graphics.overlay_router)
+app.include_router(visual_generation.router)
 
 @app.get("/")
 def root():

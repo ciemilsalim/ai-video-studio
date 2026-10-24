@@ -320,5 +320,45 @@ export function getOverlayPreviewUrl(templateId, content = {}, t = 1.0) {
   return `${API_BASE}/motion-graphics/preview?${params.toString()}`;
 }
 
+export async function fetchVisualProviders() {
+  const res = await fetch(`${API_BASE}/visual/providers`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Failed to fetch visual providers' }));
+    throw new Error(err.detail || 'Gagal memuat provider visual');
+  }
+  return res.json();
+}
+
+export async function fetchProjectVisualStatus(projectId) {
+  const res = await fetch(`${API_BASE}/visual/projects/${projectId}/status`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Failed to fetch project visual status' }));
+    throw new Error(err.detail || 'Gagal memuat status visual proyek');
+  }
+  return res.json();
+}
+
+export async function generateSceneVisual(projectId, sceneId, providerId = 'procedural_cinematic') {
+  const res = await fetch(`${API_BASE}/visual/projects/${projectId}/scenes/${sceneId}/generate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ provider_id: providerId })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Failed to start visual generation' }));
+    throw new Error(err.detail || 'Gagal memulai pembuatan visual adegan');
+  }
+  return res.json();
+}
+
+export async function getSceneVisualJob(projectId, sceneId) {
+  const res = await fetch(`${API_BASE}/visual/projects/${projectId}/scenes/${sceneId}/job`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Failed to get visual job status' }));
+    throw new Error(err.detail || 'Gagal memeriksa status pekerjaan visual');
+  }
+  return res.json();
+}
+
 
 

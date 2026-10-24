@@ -229,9 +229,10 @@ class AssetService:
             scene = next((s for s in project.storyboard.scenes if s.scene_id == scene_id), None)
             if scene:
                 scene.asset_id = asset.asset_id
-                if asset.asset_type == "footage":
+                if asset.asset_type in ["footage", "image_reference"]:
                     scene.footage_path = asset.file_path
                     scene.production_status = "footage_ready"
+                    scene.visual_status = "ready"
 
         storage_service.save_project(project)
         return asset
@@ -251,9 +252,10 @@ class AssetService:
 
         asset.scene_id = scene_id
         scene.asset_id = asset.asset_id
-        if asset.asset_type == "footage":
+        if asset.asset_type in ["footage", "image_reference"]:
             scene.footage_path = asset.file_path
             scene.production_status = "footage_ready"
+            scene.visual_status = "ready"
 
         storage_service.save_project(project)
         return asset
@@ -270,6 +272,7 @@ class AssetService:
         # Detach from scene
         scene.asset_id = None
         scene.footage_path = None
+        scene.visual_status = "missing"
         if scene.narration_audio_path:
             scene.production_status = "narrated"
         else:
@@ -297,6 +300,7 @@ class AssetService:
             if scene and scene.asset_id == asset_id:
                 scene.asset_id = None
                 scene.footage_path = None
+                scene.visual_status = "missing"
                 scene.production_status = "narrated" if scene.narration_audio_path else "draft"
 
         # Safely remove files

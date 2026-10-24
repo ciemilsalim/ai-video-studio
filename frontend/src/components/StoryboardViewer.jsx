@@ -6,7 +6,9 @@ import {
   reorderScenes,
   generateSceneNarration,
   generateAllNarration,
-  detachAsset
+  detachAsset,
+  generateSceneVisual,
+  getSceneVisualJob
 } from '../services/api';
 
 export default function StoryboardViewer({
@@ -30,6 +32,8 @@ export default function StoryboardViewer({
   });
   const [generatingTtsId, setGeneratingTtsId] = useState(null);
   const [batchTtsLoading, setBatchTtsLoading] = useState(false);
+  const [generatingVisualId, setGeneratingVisualId] = useState(null);
+  const [visualErrorMap, setVisualErrorMap] = useState({});
 
   if (!project) return null;
 
@@ -135,7 +139,7 @@ export default function StoryboardViewer({
   };
 
   const handleDetachFootage = async (sceneId) => {
-    if (!window.confirm('Lepas footage dari adegan ini dan kembali ke placeholder?')) return;
+    if (!window.confirm('Lepas visual dari adegan ini?')) return;
     try {
       await detachAsset(project.id, sceneId);
       const res = await fetch(`/api/projects/${project.id}`);
@@ -144,6 +148,50 @@ export default function StoryboardViewer({
     } catch (err) {
       alert(`Gagal melepas footage: ${err.message}`);
     }
+  };
+
+  const handleGenerateVisual = async (sceneId) => {
+    try {
+      setGeneratingVisualId(sceneId);
+      setVisualErrorMap(prev => ({ ...prev, [sceneId]: null }));
+      await generateSceneVisual(project.id, sceneId, 'procedural_cinematic');
+
+      let finished = false;
+      let attempts = 0;
+      while (!finished && attempts < 45) {
+        await new Promise(r => setTimeout(r, 1000));
+        const statusRes = await getSceneVisualJob(project.id, sceneId);
+        if (statusRes.status === 'completed') {
+          finished = true;
+          const pRes = await fetch(`/api/projects/${project.id}`);
+          const updated = await pRes.json();
+          onProjectUpdated(updated);
+          break;
+        } else if (statusRes.status === 'failed') {
+          throw new Error(statusRes.error || 'Generasi visual gagal');
+        }
+        attempts++;
+      }
+    } catch (err) {
+      setVisualErrorMap(prev => ({ ...prev, [sceneId]: err.message }));
+      const pRes = await fetch(`/api/projects/${project.id}`);
+      const updated = await pRes.json();
+      onProjectUpdated(updated);
+    } finally {
+      setGeneratingVisualId(null);
+    }
+  };
+
+  const handleAssemblyClick = () => {
+    const scenesWithoutVisual = scenes.filter(s => !s.footage_path && s.visual_status !== 'ready');
+    if (scenesWithoutVisual.length > 0) {
+      const sceneNums = scenesWithoutVisual.map(s => `#${s.scene_number}`).join(', ');
+      const proceed = window.confirm(
+        `PERINGATAN VALIDASI VISUAL:\nTerdapat ${scenesWithoutVisual.length} adegan yang belum memiliki footage/gambar visual utama (Adegan: ${sceneNums}).\n\nJika dilanjutkan tanpa visual, adegan tersebut hanya menampilkan kartu teks placeholder tanpa footage nyata.\n\nApakah Anda tetap ingin merakit video sekarang?`
+      );
+      if (!proceed) return;
+    }
+    onOpenAssembly(project);
   };
 
   return (
@@ -194,7 +242,7 @@ export default function StoryboardViewer({
             <button
               className="btn btn-primary"
               style={{ fontSize: '0.8rem', padding: '0.45rem 0.85rem', background: 'linear-gradient(135deg, #10b981, #059669)' }}
-              onClick={() => onOpenAssembly(project)}
+              onClick={handleAssemblyClick}
             >
               🎬 Rakit Video Lengkap (Assembly)
             </button>
@@ -422,46 +470,145 @@ export default function StoryboardViewer({
                       <span style={{ marginLeft: '1rem', fontFamily: 'var(--font-mono)' }}>Durasi: {scene.target_duration_seconds}s</span>
                     </div>
 
-                    {/* Visual Media & Footage Status */}
-                    <div style={{ marginTop: '0.75rem', background: scene.footage_path ? 'rgba(16, 185, 129, 0.08)' : 'rgba(245, 158, 11, 0.08)', border: `1px solid ${scene.footage_path ? 'rgba(16, 185, 129, 0.25)' : 'rgba(245, 158, 11, 0.25)'}`, borderRadius: 'var(--radius-sm)', padding: '0.65rem 0.85rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem' }}>
-                        <span style={{ fontWeight: 700, color: scene.footage_path ? '#34d399' : '#fbbf24' }}>
-                          {scene.footage_path ? '✓ Footage Siap' : '⚡ Mode Placeholder'}
-                        </span>
-                        <span style={{ color: 'var(--text-dim)', fontSize: '0.75rem', fontFamily: 'var(--font-mono)' }}>
-                          {scene.footage_path ? scene.footage_path.split(/[\\/]/).pop() : 'Visual sinematik dihasilkan FFmpeg otomatis'}
-                        </span>
-                      </div>
+                    {/* Visual Media & Footage Status Block */}
+                    {(() => {
+                      const isVisualReady = !!scene.footage_path;
+                      const isProcessing = scene.visual_status === 'processing' || generatingVisualId === scene.scene_id;
+                      const hasFailed = scene.visual_status === 'failed' || !!visualErrorMap[scene.scene_id];
+                      const errorMessage = visualErrorMap[scene.scene_id] || (scene.visual_status === 'failed' ? 'Gagal memproses file footage/gambar visual' : null);
 
-                      <div style={{ display: 'flex', gap: '0.4rem' }}>
-                        {scene.footage_path ? (
-                          <>
-                            <button
-                              className="btn btn-secondary"
-                              style={{ fontSize: '0.7rem', padding: '0.2rem 0.5rem', color: '#38bdf8' }}
-                              onClick={() => onOpenAssetManager && onOpenAssetManager(scene.scene_id)}
-                            >
-                              Ganti Footage
-                            </button>
-                            <button
-                              className="btn btn-secondary"
-                              style={{ fontSize: '0.7rem', padding: '0.2rem 0.5rem', color: '#f87171', borderColor: 'rgba(248, 113, 113, 0.3)' }}
-                              onClick={() => handleDetachFootage(scene.scene_id)}
-                            >
-                              Lepas
-                            </button>
-                          </>
-                        ) : (
-                          <button
-                            className="btn btn-secondary"
-                            style={{ fontSize: '0.7rem', padding: '0.2rem 0.55rem', borderColor: '#f59e0b', color: '#fbbf24' }}
-                            onClick={() => onOpenAssetManager && onOpenAssetManager(scene.scene_id)}
-                          >
-                            + Pasang Footage / Gambar
-                          </button>
-                        )}
-                      </div>
-                    </div>
+                      const attachedAsset = (project.assets || []).find(
+                        (a) => a.asset_id === scene.asset_id || (scene.footage_path && a.file_path === scene.footage_path)
+                      );
+                      const isVideo = attachedAsset ? attachedAsset.asset_type === 'footage' : (scene.footage_path && scene.footage_path.toLowerCase().match(/\.(mp4|mov|webm|mkv)$/));
+
+                      return (
+                        <div
+                          style={{
+                            marginTop: '0.75rem',
+                            background: isProcessing
+                              ? 'rgba(56, 189, 248, 0.08)'
+                              : isVisualReady
+                              ? 'rgba(16, 185, 129, 0.08)'
+                              : hasFailed
+                              ? 'rgba(239, 68, 68, 0.08)'
+                              : 'rgba(245, 158, 11, 0.08)',
+                            border: `1px solid ${
+                              isProcessing
+                                ? 'rgba(56, 189, 248, 0.4)'
+                                : isVisualReady
+                                ? 'rgba(16, 185, 129, 0.3)'
+                                : hasFailed
+                                ? 'rgba(239, 68, 68, 0.4)'
+                                : 'rgba(245, 158, 11, 0.3)'
+                            }`,
+                            borderRadius: 'var(--radius-sm)',
+                            padding: '0.75rem 0.85rem'
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.6rem' }}>
+                            {/* Left: Status Badge & Info */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1, minWidth: '240px' }}>
+                              {/* Thumbnail preview if available */}
+                              {isVisualReady && attachedAsset?.thumbnail_url && (
+                                <img
+                                  src={attachedAsset.thumbnail_url}
+                                  alt="Preview"
+                                  style={{
+                                    width: '48px',
+                                    height: '64px',
+                                    objectFit: 'cover',
+                                    borderRadius: '4px',
+                                    border: '1px solid rgba(255,255,255,0.2)'
+                                  }}
+                                  onError={(e) => { e.target.style.display = 'none'; }}
+                                />
+                              )}
+
+                              <div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
+                                  <span
+                                    style={{
+                                      fontWeight: 700,
+                                      fontSize: '0.8rem',
+                                      color: isProcessing
+                                        ? '#38bdf8'
+                                        : isVisualReady
+                                        ? '#34d399'
+                                        : hasFailed
+                                        ? '#f87171'
+                                        : '#fbbf24'
+                                    }}
+                                  >
+                                    {isProcessing
+                                      ? '⚡ Sedang Memproses Visual...'
+                                      : isVisualReady
+                                      ? (isVideo ? '✓ Visual Siap (Video Bergerak)' : '✓ Visual Siap (Gambar Diam)')
+                                      : hasFailed
+                                      ? '❌ Gagal Menghasilkan Visual'
+                                      : '⚠️ Visual Utama Belum Tersedia'}
+                                  </span>
+
+                                  {isVisualReady && (
+                                    <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
+                                      {scene.footage_path.split(/[\\/]/).pop()}
+                                    </span>
+                                  )}
+                                </div>
+
+                                <div style={{ fontSize: '0.74rem', color: hasFailed ? '#fca5a5' : 'var(--text-muted)' }}>
+                                  {isProcessing && 'Mesin prosedural lokal sedang merender frame video 1080x1920 30 FPS...'}
+                                  {isVisualReady && isVideo && (attachedAsset?.duration_sec ? `Durasi sumber: ${attachedAsset.duration_sec}s | Terhubung ke adegan` : 'Footage video vertikal terhubung')}
+                                  {isVisualReady && !isVideo && 'Gambar still vertikal akan ditampilkan penuh sepanjang durasi adegan'}
+                                  {hasFailed && (errorMessage || 'Terjadi kesalahan saat memproses visual')}
+                                  {!isVisualReady && !isProcessing && !hasFailed && 'Adegan belum memiliki visual footage. Pilih aset lokal atau generate visual sinematik.'}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Right: Actions */}
+                            <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                              {isVisualReady ? (
+                                <>
+                                  <button
+                                    className="btn btn-secondary"
+                                    style={{ fontSize: '0.7rem', padding: '0.25rem 0.55rem', color: '#38bdf8' }}
+                                    onClick={() => onOpenAssetManager && onOpenAssetManager(scene.scene_id)}
+                                  >
+                                    Ganti / Pilih Aset
+                                  </button>
+                                  <button
+                                    className="btn btn-secondary"
+                                    style={{ fontSize: '0.7rem', padding: '0.25rem 0.55rem', color: '#f87171', borderColor: 'rgba(248, 113, 113, 0.3)' }}
+                                    onClick={() => handleDetachFootage(scene.scene_id)}
+                                  >
+                                    Lepas
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  <button
+                                    className="btn btn-secondary"
+                                    style={{ fontSize: '0.7rem', padding: '0.25rem 0.55rem', borderColor: '#f59e0b', color: '#fbbf24' }}
+                                    onClick={() => onOpenAssetManager && onOpenAssetManager(scene.scene_id)}
+                                  >
+                                    📁 Pasang Footage / Gambar
+                                  </button>
+                                  <button
+                                    className="btn btn-secondary"
+                                    style={{ fontSize: '0.7rem', padding: '0.25rem 0.55rem', borderColor: '#38bdf8', color: '#38bdf8' }}
+                                    disabled={isProcessing}
+                                    onClick={() => handleGenerateVisual(scene.scene_id)}
+                                  >
+                                    {isProcessing ? 'Memproses...' : hasFailed ? '🔄 Coba Lagi' : '✨ Generate Visual Sinematik'}
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
 
                     {/* Motion Graphics Overlays Status */}
                     <div style={{ marginTop: '0.5rem', background: (scene.motion_overlays && scene.motion_overlays.length > 0) ? 'rgba(56, 189, 248, 0.08)' : 'rgba(255, 255, 255, 0.02)', border: `1px solid ${(scene.motion_overlays && scene.motion_overlays.length > 0) ? 'rgba(56, 189, 248, 0.3)' : 'rgba(255, 255, 255, 0.08)'}`, borderRadius: 'var(--radius-sm)', padding: '0.65rem 0.85rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>

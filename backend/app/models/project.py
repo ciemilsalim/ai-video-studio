@@ -1,3 +1,4 @@
+import os
 from typing import List, Optional, Literal, Dict, Any
 from pydantic import BaseModel, Field
 from datetime import datetime, timezone
@@ -112,10 +113,18 @@ class Scene(BaseModel):
     narration_audio_path: Optional[str] = None
     narration_audio_duration_sec: Optional[float] = None
     production_status: Literal["draft", "narrated", "footage_ready", "assembled", "ready"] = "draft"
+    visual_status: Literal["ready", "processing", "missing", "failed"] = "missing"
+    visual_job_id: Optional[str] = None
     motion_overlays: List[MotionOverlay] = Field(default_factory=list)
     shots: List[Shot] = Field(default_factory=list)
 
     def model_post_init(self, __context):
+        # Auto-detect visual_status from footage_path if not explicitly set
+        if self.footage_path and os.path.isfile(self.footage_path):
+            self.visual_status = "ready"
+        elif not self.footage_path and self.visual_status == "ready":
+            self.visual_status = "missing"
+
         # Auto-sync visual_prompt from shots if empty
         if self.shots and not self.visual_prompt:
             self.visual_prompt = self.shots[0].visual_prompt
@@ -145,6 +154,8 @@ class SceneUpdateRequest(BaseModel):
     footage_path: Optional[str] = None
     asset_id: Optional[str] = None
     production_status: Optional[Literal["draft", "narrated", "footage_ready", "assembled", "ready"]] = None
+    visual_status: Optional[Literal["ready", "processing", "missing", "failed"]] = None
+    visual_job_id: Optional[str] = None
     motion_overlays: Optional[List[MotionOverlay]] = None
 
 class StoryboardReorderRequest(BaseModel):

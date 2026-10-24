@@ -21,7 +21,10 @@ backend/data/projects/*.wav
 backend/data/renders/
 backend/data/audio/
 backend/data/assets/
+backend/data/jobs/
+backend/data/projects/demo-*
 backend/temp/
+scratch/
 *.mp4
 *.webm
 *.mp3

@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timezone
 from PIL import Image, ImageDraw, ImageFont
+import cv2
 
 from app.config import RENDERS_DIR, TEMP_DIR, resolve_ffmpeg_binary
 from app.models.project import VideoProject, Scene
@@ -168,13 +169,21 @@ class AssemblyService:
     def assemble_scene_segment_sync(
         self,
         scene: Scene,
-        project_title: str,
-        total_scenes: int,
-        ffmpeg_bin: Optional[str] = None
+        project_title: str = "",
+        total_scenes: int = 1,
+        ffmpeg_bin: Optional[str] = None,
+        project: Optional[VideoProject] = None
     ) -> Path:
         """
         Renders a single scene segment normalized to 1080x1920, 30fps CFR, H.264, AAC stereo.
         """
+        if project:
+            if not project_title:
+                project_title = project.title
+            if total_scenes <= 1 and project.storyboard and project.storyboard.scenes:
+                total_scenes = len(project.storyboard.scenes)
+        if not project_title:
+            project_title = "AI Video Studio"
         bin_path = ffmpeg_bin or resolve_ffmpeg_binary()
         if not bin_path or not os.path.exists(bin_path):
             raise AssemblyServiceError("FFmpeg binary tidak ditemukan pada sistem.")
@@ -197,11 +206,40 @@ class AssemblyService:
 
         # Determine visual source
         has_real_footage = False
-        if scene.footage_path:
+        
+        # 1. Resolve footage_path if missing but asset_id is present in project
+        if (not scene.footage_path or not str(scene.footage_path).strip()) and scene.asset_id and project:
+            matching = next((a for a in project.assets if a.asset_id == scene.asset_id), None)
+            if matching and matching.file_path and os.path.isfile(matching.file_path):
+                scene.footage_path = matching.file_path
+
+        if scene.footage_path and str(scene.footage_path).strip():
             if not os.path.isfile(scene.footage_path):
                 raise AssemblyServiceError(
                     f"Aset visual untuk adegan {scene.scene_number} ('{scene.title}') tidak ditemukan di disk: {scene.footage_path}"
                 )
+            if os.path.getsize(scene.footage_path) == 0:
+                raise AssemblyServiceError(
+                    f"Aset visual untuk adegan {scene.scene_number} ('{scene.title}') rusak atau berukuran 0 byte: {scene.footage_path}"
+                )
+
+            ext = Path(scene.footage_path).suffix.lower()
+            if ext in {".png", ".jpg", ".jpeg", ".webp"}:
+                try:
+                    with Image.open(scene.footage_path) as test_img:
+                        test_img.verify()
+                except Exception as e:
+                    raise AssemblyServiceError(
+                        f"Aset gambar untuk adegan {scene.scene_number} ('{scene.title}') rusak atau tidak dapat dibaca: {str(e)}"
+                    )
+            elif ext in {".mp4", ".mov", ".webm", ".mkv"}:
+                cap = cv2.VideoCapture(str(scene.footage_path))
+                if not cap.isOpened():
+                    raise AssemblyServiceError(
+                        f"Aset video untuk adegan {scene.scene_number} ('{scene.title}') tidak dapat dibuka atau codec tidak didukung."
+                    )
+                cap.release()
+
             has_real_footage = True
 
         temp_placeholder = None
@@ -327,7 +365,8 @@ class AssemblyService:
                     scene=sc,
                     project_title=project.title,
                     total_scenes=len(scenes),
-                    ffmpeg_bin=ffmpeg_bin
+                    ffmpeg_bin=ffmpeg_bin,
+                    project=project
                 )
                 segment_paths.append(seg_path)
 
