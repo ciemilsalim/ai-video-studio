@@ -43,7 +43,45 @@ class Scene(BaseModel):
     scene_number: int = Field(ge=1)
     title: str
     narration_text: Optional[str] = ""
+    target_duration_seconds: float = Field(default=4.0, ge=1.0, le=120.0)
+    visual_prompt: Optional[str] = ""
+    footage_path: Optional[str] = None
+    narration_audio_path: Optional[str] = None
+    narration_audio_duration_sec: Optional[float] = None
+    production_status: Literal["draft", "narrated", "footage_ready", "assembled", "ready"] = "draft"
     shots: List[Shot] = Field(default_factory=list)
+
+    def model_post_init(self, __context):
+        # Auto-sync visual_prompt from shots if empty
+        if self.shots and not self.visual_prompt:
+            self.visual_prompt = self.shots[0].visual_prompt
+        # If shots empty and visual_prompt provided, generate default shot
+        if not self.shots and self.visual_prompt:
+            self.shots = [
+                Shot(
+                    shot_id=f"{self.scene_id}-shot1",
+                    visual_prompt=self.visual_prompt,
+                    duration_sec=self.target_duration_seconds
+                )
+            ]
+
+class SceneCreateRequest(BaseModel):
+    title: str = Field(..., min_length=1)
+    narration_text: Optional[str] = ""
+    target_duration_seconds: float = Field(default=4.0, ge=1.0, le=120.0)
+    visual_prompt: Optional[str] = ""
+    footage_path: Optional[str] = None
+
+class SceneUpdateRequest(BaseModel):
+    title: Optional[str] = None
+    narration_text: Optional[str] = None
+    target_duration_seconds: Optional[float] = None
+    visual_prompt: Optional[str] = None
+    footage_path: Optional[str] = None
+    production_status: Optional[Literal["draft", "narrated", "footage_ready", "assembled", "ready"]] = None
+
+class StoryboardReorderRequest(BaseModel):
+    scene_ids: List[str]
 
 class Storyboard(BaseModel):
     version: str = "1.0.0"

@@ -9,7 +9,7 @@
   },
   "fps": 30,
   "created_at": "2026-10-24T10:00:00Z",
-  "updated_at": "2026-10-24T10:00:00Z",
+  "updated_at": "2026-10-24T03:31:32.119084+00:00",
   "settings": {
     "voice": "id-ID-ArdiNeural",
     "bgm_volume": 0.15,
@@ -25,6 +25,12 @@
         "scene_number": 1,
         "title": "Hook: Rahasia Samudera Purba",
         "narration_text": "Jauh sebelum peta modern digambar, pelaut Nusantara telah menaklukkan luasnya samudera tanpa kompas magnetik.",
+        "target_duration_seconds": 4.0,
+        "visual_prompt": "Cinematic aerial top-down view of turquoise ocean with deep ocean trenches and ancient wooden ship breaking gentle waves",
+        "footage_path": null,
+        "narration_audio_path": "D:\\laragon\\www\\ai-video-studio\\backend\\data\\audio\\misteri-peradaban-nusantara\\scene-1_narration.mp3",
+        "narration_audio_duration_sec": 6.55,
+        "production_status": "narrated",
         "shots": [
           {
             "shot_id": "shot-101",
@@ -52,6 +58,12 @@
         "scene_number": 2,
         "title": "Anatomi Kapal Pinisi",
         "narration_text": "Dibuat dari kayu ulin pilihan, pasak kayu menjadi rahasia kekuatan kapal legendaris ini.",
+        "target_duration_seconds": 4.0,
+        "visual_prompt": "Extreme macro close-up of master craftsman hands fitting ancient ironwood dowel into a traditional wooden ship hull, dust particles glowing in golden sunlight",
+        "footage_path": null,
+        "narration_audio_path": "D:\\laragon\\www\\ai-video-studio\\backend\\data\\audio\\misteri-peradaban-nusantara\\scene-2_narration.mp3",
+        "narration_audio_duration_sec": 5.59,
+        "production_status": "narrated",
         "shots": [
           {
             "shot_id": "shot-102",

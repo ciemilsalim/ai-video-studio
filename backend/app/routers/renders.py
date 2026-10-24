@@ -102,3 +102,25 @@ async def render_project_demo(project_id: str, req: ProjectRenderRequest):
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(ee))
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Unexpected error: {str(e)}")
+
+@router.post("/assemble/{project_id}", response_model=Dict[str, Any])
+async def assemble_project_video(project_id: str):
+    project = storage_service.get_project(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail=f"Project '{project_id}' tidak ditemukan.")
+
+    if not project.storyboard.scenes:
+        raise HTTPException(status_code=400, detail="Proyek tidak memiliki adegan dalam storyboard untuk dirakit.")
+
+    from app.services.assembly_service import assembly_service, AssemblyServiceError
+
+    try:
+        result = await run_in_threadpool(
+            assembly_service.assemble_project_video_sync,
+            project=project
+        )
+        return result
+    except AssemblyServiceError as ase:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(ase))
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Assembly error: {str(e)}")

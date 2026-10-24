@@ -5,7 +5,16 @@ import CreateProjectModal from './components/CreateProjectModal';
 import StoryboardViewer from './components/StoryboardViewer';
 import PromptStudioModal from './components/PromptStudioModal';
 import RenderModal from './components/RenderModal';
-import { fetchHealth, fetchProjects, fetchProject, createProject, deleteProject, renderProjectDemo, renderStandaloneDemo } from './services/api';
+import {
+  fetchHealth,
+  fetchProjects,
+  fetchProject,
+  createProject,
+  deleteProject,
+  renderProjectDemo,
+  renderStandaloneDemo,
+  assembleProjectVideo
+} from './services/api';
 
 export default function App() {
   const [health, setHealth] = useState(null);
@@ -19,6 +28,7 @@ export default function App() {
 
   // Render modal state
   const [isRenderOpen, setIsRenderOpen] = useState(false);
+  const [isAssemblyMode, setIsAssemblyMode] = useState(false);
   const [renderTarget, setRenderTarget] = useState(null); // project object or null (for standalone)
   const [renderStatus, setRenderStatus] = useState('idle'); // idle, rendering, success, error
   const [renderResult, setRenderResult] = useState(null);
@@ -68,6 +78,7 @@ export default function App() {
 
   const handleOpenRender = (project) => {
     setRenderTarget(project);
+    setIsAssemblyMode(false);
     setRenderStatus('idle');
     setRenderResult(null);
     setIsRenderOpen(true);
@@ -75,6 +86,15 @@ export default function App() {
 
   const handleOpenStandaloneRender = () => {
     setRenderTarget(null);
+    setIsAssemblyMode(false);
+    setRenderStatus('idle');
+    setRenderResult(null);
+    setIsRenderOpen(true);
+  };
+
+  const handleOpenAssembly = (project) => {
+    setRenderTarget(project);
+    setIsAssemblyMode(true);
     setRenderStatus('idle');
     setRenderResult(null);
     setIsRenderOpen(true);
@@ -84,7 +104,9 @@ export default function App() {
     try {
       setRenderStatus('rendering');
       let res;
-      if (renderTarget) {
+      if (isAssemblyMode && renderTarget) {
+        res = await assembleProjectVideo(renderTarget.id);
+      } else if (renderTarget) {
         res = await renderProjectDemo(renderTarget.id, durationSec);
       } else {
         res = await renderStandaloneDemo(
@@ -163,6 +185,7 @@ export default function App() {
                   onOpenPromptStudio={(id) => setActivePromptStudioId(id)}
                   onDeleteProject={handleDeleteProject}
                   onOpenRender={handleOpenRender}
+                  onOpenAssembly={handleOpenAssembly}
                 />
               ))}
             </div>
@@ -184,6 +207,14 @@ export default function App() {
             setActiveStoryboardProject(null);
             setActivePromptStudioId(id);
           }}
+          onOpenAssembly={(p) => {
+            setActiveStoryboardProject(null);
+            handleOpenAssembly(p);
+          }}
+          onProjectUpdated={(p) => {
+            setActiveStoryboardProject(p);
+            initApp();
+          }}
         />
       )}
 
@@ -201,6 +232,7 @@ export default function App() {
         renderStatus={renderStatus}
         renderResult={renderResult}
         onTriggerRender={handleTriggerRender}
+        isAssembly={isAssemblyMode}
       />
     </div>
   );

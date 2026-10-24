@@ -1,6 +1,14 @@
 import React, { useState } from 'react';
 
-export default function RenderModal({ isOpen, onClose, renderStatus, renderResult, onTriggerRender, projectName }) {
+export default function RenderModal({
+  isOpen,
+  onClose,
+  renderStatus,
+  renderResult,
+  onTriggerRender,
+  projectName,
+  isAssembly = false
+}) {
   const [duration, setDuration] = useState(5.0);
 
   if (!isOpen) return null;
@@ -11,17 +19,21 @@ export default function RenderModal({ isOpen, onClose, renderStatus, renderResul
 
   return (
     <div className="modal-overlay" onClick={isRendering ? null : onClose}>
-      <div className="modal-content" style={{ maxWidth: '640px' }} onClick={(e) => e.stopPropagation()}>
+      <div className="modal-content" style={{ maxWidth: '660px' }} onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-              <span className="brand-badge" style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', borderColor: '#10b981' }}>
-                FFMPEG LOCAL ENGINE
+              <span className="brand-badge" style={{ background: isAssembly ? 'rgba(99, 102, 241, 0.2)' : 'rgba(16, 185, 129, 0.2)', color: isAssembly ? '#a5b4fc' : '#34d399', borderColor: isAssembly ? '#6366f1' : '#10b981' }}>
+                {isAssembly ? 'MULTI-SCENE ASSEMBLY' : 'FFMPEG LOCAL ENGINE'}
               </span>
-              <h2 className="modal-title">Render Video Vertikal (1080×1920)</h2>
+              <h2 className="modal-title">
+                {isAssembly ? 'Rakit Video Lengkap Multi-Adegan' : 'Render Video Vertikal (1080×1920)'}
+              </h2>
             </div>
             <div style={{ fontSize: '0.85rem', color: 'var(--text-dim)', marginTop: '0.2rem' }}>
-              Produksi video MP4 H.264 vertikal deterministik dengan audio AAC dan motion graphic card.
+              {isAssembly
+                ? 'Menggabungkan seluruh adegan storyboard, narasi suara Edge-TTS, dan grafis deterministik.'
+                : 'Produksi video MP4 H.264 vertikal deterministik dengan audio AAC dan motion graphic card.'}
             </div>
           </div>
           {!isRendering && <button className="close-btn" onClick={onClose}>&times;</button>}
@@ -39,8 +51,8 @@ export default function RenderModal({ isOpen, onClose, renderStatus, renderResul
                   <div style={{ fontWeight: 600, fontSize: '0.85rem', color: '#38bdf8' }}>1080 × 1920 (9:16)</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>Codec</div>
-                  <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>H.264 / AAC</div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>Codec Video & Audio</div>
+                  <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>H.264 / AAC 48kHz</div>
                 </div>
                 <div>
                   <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>Frame Rate</div>
@@ -49,22 +61,34 @@ export default function RenderModal({ isOpen, onClose, renderStatus, renderResul
               </div>
             </div>
 
-            <div className="form-group">
-              <label className="form-label">Durasi Video Demonstrasi (Detik):</label>
-              <select className="form-select" value={duration} onChange={(e) => setDuration(parseFloat(e.target.value))}>
-                <option value={5.0}>5.0 Detik (Rekomendasi Cepat)</option>
-                <option value={7.0}>7.0 Detik</option>
-                <option value={10.0}>10.0 Detik</option>
-              </select>
-            </div>
+            {!isAssembly && (
+              <div className="form-group">
+                <label className="form-label">Durasi Video Demonstrasi (Detik):</label>
+                <select className="form-select" value={duration} onChange={(e) => setDuration(parseFloat(e.target.value))}>
+                  <option value={5.0}>5.0 Detik (Rekomendasi Cepat)</option>
+                  <option value={7.0}>7.0 Detik</option>
+                  <option value={10.0}>10.0 Detik</option>
+                </select>
+              </div>
+            )}
+
+            {isAssembly && (
+              <div style={{ background: 'rgba(99, 102, 241, 0.08)', border: '1px solid rgba(99, 102, 241, 0.3)', padding: '0.85rem 1rem', borderRadius: 'var(--radius-sm)', marginBottom: '1.25rem', fontSize: '0.85rem', color: '#cbd5e1' }}>
+                💡 <strong>Pipeline Assembly:</strong> Engine akan memproses setiap adegan secara berurutan, menyesuaikan durasi visual dengan durasi audio narasi Edge-TTS, membakar subtitle sinkron, lalu menggabungkannya ke dalam MP4 final.
+              </div>
+            )}
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.5rem' }}>
               <button className="btn btn-secondary" onClick={onClose}>Batal</button>
-              <button className="btn btn-primary" onClick={() => onTriggerRender(duration)}>
+              <button
+                className="btn btn-primary"
+                style={{ background: isAssembly ? 'linear-gradient(135deg, #6366f1, #4f46e5)' : 'linear-gradient(135deg, #10b981, #059669)' }}
+                onClick={() => onTriggerRender(duration)}
+              >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <polygon points="5 3 19 12 5 21 5 3"></polygon>
                 </svg>
-                Mulai Render Sekarang
+                {isAssembly ? 'Mulai Rakit Video Sekarang' : 'Mulai Render Cepat'}
               </button>
             </div>
           </div>
@@ -72,10 +96,14 @@ export default function RenderModal({ isOpen, onClose, renderStatus, renderResul
 
         {isRendering && (
           <div style={{ textAlign: 'center', padding: '3rem 1rem' }}>
-            <div style={{ width: '48px', height: '48px', border: '3px solid rgba(99, 102, 241, 0.2)', borderTopColor: 'var(--accent-primary)', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 1.5rem' }}></div>
-            <h3 style={{ fontSize: '1.15rem', marginBottom: '0.5rem' }}>Sedang Merender Video MP4 Vertikal...</h3>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', maxWidth: '400px', margin: '0 auto' }}>
-              FFmpeg 7.1 sedang memproses layer grafis deterministik, mengomposisikan audio stereo, dan mengodekan frame ke 1080×1920.
+            <div style={{ width: '48px', height: '48px', border: '3px solid rgba(99, 102, 241, 0.2)', borderTopColor: isAssembly ? 'var(--accent-primary)' : 'var(--accent-success)', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 1.5rem' }}></div>
+            <h3 style={{ fontSize: '1.15rem', marginBottom: '0.5rem' }}>
+              {isAssembly ? 'Sedang Merakit Video Dokumenter Multi-Adegan...' : 'Sedang Merender Video MP4 Vertikal...'}
+            </h3>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', maxWidth: '420px', margin: '0 auto' }}>
+              {isAssembly
+                ? 'FFmpeg 7.1 sedang mengodekan segmen adegan individual, menyinkronkan audio narasi, dan menggabungkan manifest video.'
+                : 'FFmpeg 7.1 sedang memproses layer grafis deterministik, mengomposisikan audio stereo, dan mengodekan frame ke 1080×1920.'}
             </p>
             <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
           </div>
@@ -102,7 +130,9 @@ export default function RenderModal({ isOpen, onClose, renderStatus, renderResul
             <div style={{ background: 'var(--bg-primary)', padding: '1rem', borderRadius: 'var(--radius-md)', marginBottom: '1.25rem', fontSize: '0.8rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
                 <span style={{ color: 'var(--text-dim)' }}>Status Verifikasi:</span>
-                <span style={{ color: 'var(--accent-success)', fontWeight: 700 }}>✓ TERVERIFIKASI REAL RENDER</span>
+                <span style={{ color: 'var(--accent-success)', fontWeight: 700 }}>
+                  {isAssembly ? `✓ RAKITAN MULTI-ADEGAN SELESAI (${renderResult.scenes_count || 1} ADEGAN)` : '✓ TERVERIFIKASI REAL RENDER'}
+                </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
                 <span style={{ color: 'var(--text-dim)' }}>Dimensi & Codec:</span>
@@ -131,9 +161,9 @@ export default function RenderModal({ isOpen, onClose, renderStatus, renderResul
         {isError && (
           <div style={{ textAlign: 'center', padding: '2rem 1rem' }}>
             <div style={{ fontSize: '2rem', marginBottom: '0.5rem', color: 'var(--accent-danger)' }}>⚠</div>
-            <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem', color: 'var(--accent-danger)' }}>Rendering Gagal</h3>
+            <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem', color: 'var(--accent-danger)' }}>Rendering / Assembly Gagal</h3>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
-              {renderResult?.error || 'Terjadi kesalahan teknis saat eksekusi FFmpeg.'}
+              {renderResult?.error || 'Terjadi kesalahan teknis saat proses FFmpeg.'}
             </p>
             <button className="btn btn-secondary" onClick={onClose}>Tutup</button>
           </div>

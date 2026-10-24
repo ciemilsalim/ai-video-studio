@@ -19,9 +19,12 @@ backend/data/projects/*.mp4
 backend/data/projects/*.webm
 backend/data/projects/*.wav
 backend/data/renders/
+backend/data/audio/
 backend/temp/
 *.mp4
 *.webm
+*.mp3
+*.wav
 output/
 temp/
 logs/

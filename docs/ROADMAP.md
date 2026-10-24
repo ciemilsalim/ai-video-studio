@@ -25,14 +25,21 @@
 
 ---
 
-## Phase 2B: Storyboard & Google Flow Prompt Studio
-- [ ] Visual Storyboard Editor with scene cards, shot order drag-and-drop, and timing controls.
-- [ ] Google Flow Prompt Studio:
-  - Subject, action, environment descriptors.
-  - Camera motion directives (pan, tilt, orbit, tracking shot, drone reveal).
-  - Lighting and mood presets (golden hour, volumetric neon, moody documentary filmic).
-  - Aspect ratio locking (`9:16` vertical 1080×1920).
-  - Batch export to JSON/Clipboard/Markdown for Flow generation.
+## Phase 2B: Storyboard, Edge-TTS, and Multi-Scene Assembly (Completed & Verified)
+- [x] Storyboard Editor with Scene CRUD, ordering, and duration calculation (`models/project.py`, `routers/projects.py`).
+- [x] Edge-TTS Neural Narration Service with input validation, timeout, and offline safety (`tts_service.py`).
+- [x] Real neural speech synthesis (e.g. `id-ID-ArdiNeural`) with audio streaming & playback in web UI (`/api/audio`).
+- [x] Multi-Scene Video Assembly Engine normalizing segments to 1080×1920 30 FPS (`assembly_service.py`).
+- [x] Deterministic visual placeholder cards for scenes without user footage.
+- [x] Dual validation (OpenCV + FFmpeg) on assembled video output.
+- [x] Non-blocking FastAPI execution via `run_in_threadpool`.
+- [x] Full UI integration: add/edit/delete/reorder scenes, synthesize narration, audio preview player, and multi-scene assembly modal.
+- [x] 100% test pass rate across 18 backend tests and verified Vite build.
+
+---
+
+## Phase 2C: Google Flow Prompt Studio & Asset Library
+- [ ] Google Flow Prompt Studio enhancements (camera motions, lighting presets, aspect locking).
 - [ ] Local asset library for footage ingest (previewing generated clips, trimming start/end).
 
 ---
