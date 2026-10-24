@@ -1,0 +1,29 @@
+# Environment & Cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.env
+.venv/
+venv/
+env/
+
+# Node & Frontend
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Project data & renders
+backend/data/projects/*.mp4
+backend/data/projects/*.webm
+backend/data/projects/*.wav
+output/
+temp/
+logs/
+
+# IDE & OS
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini
