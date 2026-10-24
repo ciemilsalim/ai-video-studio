@@ -173,3 +173,83 @@ export async function assembleProjectVideo(projectId) {
   return res.json();
 }
 
+export async function fetchAssets(projectId) {
+  const res = await fetch(`${API_BASE}/assets/${projectId}`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Failed to fetch assets' }));
+    throw new Error(err.detail || 'Gagal memuat daftar aset');
+  }
+  return res.json();
+}
+
+export async function importAsset(projectId, sourcePath, sceneId = null, sourceType = 'local_import') {
+  const res = await fetch(`${API_BASE}/assets/${projectId}/import`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      source_path: sourcePath,
+      scene_id: sceneId,
+      source_type: sourceType
+    })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Failed to import asset' }));
+    throw new Error(err.detail || 'Gagal mengimpor aset');
+  }
+  return res.json();
+}
+
+export async function uploadAsset(projectId, file, sceneId = null) {
+  const formData = new FormData();
+  formData.append('file', file);
+  if (sceneId) {
+    formData.append('scene_id', sceneId);
+  }
+
+  const res = await fetch(`${API_BASE}/assets/${projectId}/upload`, {
+    method: 'POST',
+    body: formData
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Failed to upload asset' }));
+    throw new Error(err.detail || 'Gagal mengunggah aset');
+  }
+  return res.json();
+}
+
+export async function attachAsset(projectId, assetId, sceneId) {
+  const res = await fetch(`${API_BASE}/assets/${projectId}/${assetId}/attach`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ scene_id: sceneId })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Failed to attach asset' }));
+    throw new Error(err.detail || 'Gagal mengaitkan aset ke adegan');
+  }
+  return res.json();
+}
+
+export async function detachAsset(projectId, sceneId) {
+  const res = await fetch(`${API_BASE}/assets/${projectId}/detach/${sceneId}`, {
+    method: 'POST'
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Failed to detach asset' }));
+    throw new Error(err.detail || 'Gagal melepas aset dari adegan');
+  }
+  return res.json();
+}
+
+export async function deleteAsset(projectId, assetId) {
+  const res = await fetch(`${API_BASE}/assets/${projectId}/${assetId}`, {
+    method: 'DELETE'
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Failed to delete asset' }));
+    throw new Error(err.detail || 'Gagal menghapus aset');
+  }
+  return res.json();
+}
+
+

@@ -5,6 +5,7 @@ import CreateProjectModal from './components/CreateProjectModal';
 import StoryboardViewer from './components/StoryboardViewer';
 import PromptStudioModal from './components/PromptStudioModal';
 import RenderModal from './components/RenderModal';
+import AssetManagerModal from './components/AssetManagerModal';
 import {
   fetchHealth,
   fetchProjects,
@@ -25,6 +26,8 @@ export default function App() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [activeStoryboardProject, setActiveStoryboardProject] = useState(null);
   const [activePromptStudioId, setActivePromptStudioId] = useState(null);
+  const [activeAssetProject, setActiveAssetProject] = useState(null);
+  const [assetTargetSceneId, setAssetTargetSceneId] = useState(null);
 
   // Render modal state
   const [isRenderOpen, setIsRenderOpen] = useState(false);
@@ -98,6 +101,19 @@ export default function App() {
     setRenderStatus('idle');
     setRenderResult(null);
     setIsRenderOpen(true);
+  };
+
+  const handleOpenAssetManager = async (projectOrId, sceneId = null) => {
+    try {
+      let targetProj = projectOrId;
+      if (typeof projectOrId === 'string') {
+        targetProj = await fetchProject(projectOrId);
+      }
+      setActiveAssetProject(targetProj);
+      setAssetTargetSceneId(sceneId);
+    } catch (err) {
+      alert(`Gagal membuka Asset Manager: ${err.message}`);
+    }
   };
 
   const handleTriggerRender = async (durationSec) => {
@@ -186,6 +202,7 @@ export default function App() {
                   onDeleteProject={handleDeleteProject}
                   onOpenRender={handleOpenRender}
                   onOpenAssembly={handleOpenAssembly}
+                  onOpenAssetManager={handleOpenAssetManager}
                 />
               ))}
             </div>
@@ -211,8 +228,30 @@ export default function App() {
             setActiveStoryboardProject(null);
             handleOpenAssembly(p);
           }}
+          onOpenAssetManager={(sceneId) => {
+            handleOpenAssetManager(activeStoryboardProject, sceneId);
+          }}
           onProjectUpdated={(p) => {
             setActiveStoryboardProject(p);
+            initApp();
+          }}
+        />
+      )}
+
+      {activeAssetProject && (
+        <AssetManagerModal
+          isOpen={!!activeAssetProject}
+          project={activeAssetProject}
+          initialSceneId={assetTargetSceneId}
+          onClose={() => {
+            setActiveAssetProject(null);
+            setAssetTargetSceneId(null);
+          }}
+          onProjectUpdated={(updated) => {
+            setActiveAssetProject(updated);
+            if (activeStoryboardProject && activeStoryboardProject.id === updated.id) {
+              setActiveStoryboardProject(updated);
+            }
             initApp();
           }}
         />

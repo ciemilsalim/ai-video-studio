@@ -9,6 +9,7 @@ DATA_DIR = BASE_DIR / "data"
 PROJECTS_DIR = DATA_DIR / "projects"
 RENDERS_DIR = DATA_DIR / "renders"
 AUDIO_DIR = DATA_DIR / "audio"
+ASSETS_DIR = DATA_DIR / "assets"
 TEMP_DIR = BASE_DIR / "temp"
 
 # Ensure data directories exist
@@ -16,6 +17,7 @@ DATA_DIR.mkdir(parents=True, exist_ok=True)
 PROJECTS_DIR.mkdir(parents=True, exist_ok=True)
 RENDERS_DIR.mkdir(parents=True, exist_ok=True)
 AUDIO_DIR.mkdir(parents=True, exist_ok=True)
+ASSETS_DIR.mkdir(parents=True, exist_ok=True)
 TEMP_DIR.mkdir(parents=True, exist_ok=True)
 
 def resolve_ffmpeg_binary() -> str | None:

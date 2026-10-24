@@ -5,7 +5,8 @@ import {
   deleteScene,
   reorderScenes,
   generateSceneNarration,
-  generateAllNarration
+  generateAllNarration,
+  detachAsset
 } from '../services/api';
 
 export default function StoryboardViewer({
@@ -13,6 +14,7 @@ export default function StoryboardViewer({
   onClose,
   onOpenPromptStudio,
   onOpenAssembly,
+  onOpenAssetManager,
   onProjectUpdated
 }) {
   const [editingSceneId, setEditingSceneId] = useState(null);
@@ -131,6 +133,18 @@ export default function StoryboardViewer({
     }
   };
 
+  const handleDetachFootage = async (sceneId) => {
+    if (!window.confirm('Lepas footage dari adegan ini dan kembali ke placeholder?')) return;
+    try {
+      await detachAsset(project.id, sceneId);
+      const res = await fetch(`/api/projects/${project.id}`);
+      const updated = await res.json();
+      onProjectUpdated(updated);
+    } catch (err) {
+      alert(`Gagal melepas footage: ${err.message}`);
+    }
+  };
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" style={{ maxWidth: '980px', maxHeight: '92vh' }} onClick={(e) => e.stopPropagation()}>
@@ -162,6 +176,9 @@ export default function StoryboardViewer({
           </div>
 
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <button className="btn btn-secondary" style={{ fontSize: '0.8rem', padding: '0.45rem 0.85rem', borderColor: '#38bdf8', color: '#38bdf8' }} onClick={() => onOpenAssetManager && onOpenAssetManager(null)}>
+              📁 Pustaka Aset Media
+            </button>
             <button className="btn btn-secondary" style={{ fontSize: '0.8rem', padding: '0.45rem 0.85rem' }} onClick={() => setIsAddingScene(!isAddingScene)}>
               {isAddingScene ? 'Tutup Form' : '+ Tambah Adegan'}
             </button>
@@ -402,6 +419,47 @@ export default function StoryboardViewer({
                       <span style={{ color: 'var(--accent-cyan)' }}>Visual: </span>
                       <span style={{ color: 'var(--text-muted)' }}>{scene.visual_prompt || (scene.shots?.[0]?.visual_prompt || 'Placeholder visual deterministik')}</span>
                       <span style={{ marginLeft: '1rem', fontFamily: 'var(--font-mono)' }}>Durasi: {scene.target_duration_seconds}s</span>
+                    </div>
+
+                    {/* Visual Media & Footage Status */}
+                    <div style={{ marginTop: '0.75rem', background: scene.footage_path ? 'rgba(16, 185, 129, 0.08)' : 'rgba(245, 158, 11, 0.08)', border: `1px solid ${scene.footage_path ? 'rgba(16, 185, 129, 0.25)' : 'rgba(245, 158, 11, 0.25)'}`, borderRadius: 'var(--radius-sm)', padding: '0.65rem 0.85rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem' }}>
+                        <span style={{ fontWeight: 700, color: scene.footage_path ? '#34d399' : '#fbbf24' }}>
+                          {scene.footage_path ? '✓ Footage Siap' : '⚡ Mode Placeholder'}
+                        </span>
+                        <span style={{ color: 'var(--text-dim)', fontSize: '0.75rem', fontFamily: 'var(--font-mono)' }}>
+                          {scene.footage_path ? scene.footage_path.split(/[\\/]/).pop() : 'Visual sinematik dihasilkan FFmpeg otomatis'}
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '0.4rem' }}>
+                        {scene.footage_path ? (
+                          <>
+                            <button
+                              className="btn btn-secondary"
+                              style={{ fontSize: '0.7rem', padding: '0.2rem 0.5rem', color: '#38bdf8' }}
+                              onClick={() => onOpenAssetManager && onOpenAssetManager(scene.scene_id)}
+                            >
+                              Ganti Footage
+                            </button>
+                            <button
+                              className="btn btn-secondary"
+                              style={{ fontSize: '0.7rem', padding: '0.2rem 0.5rem', color: '#f87171', borderColor: 'rgba(248, 113, 113, 0.3)' }}
+                              onClick={() => handleDetachFootage(scene.scene_id)}
+                            >
+                              Lepas
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            className="btn btn-secondary"
+                            style={{ fontSize: '0.7rem', padding: '0.2rem 0.55rem', borderColor: '#f59e0b', color: '#fbbf24' }}
+                            onClick={() => onOpenAssetManager && onOpenAssetManager(scene.scene_id)}
+                          >
+                            + Pasang Footage / Gambar
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}

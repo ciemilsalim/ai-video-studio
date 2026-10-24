@@ -20,6 +20,7 @@ backend/data/projects/*.webm
 backend/data/projects/*.wav
 backend/data/renders/
 backend/data/audio/
+backend/data/assets/
 backend/temp/
 *.mp4
 *.webm

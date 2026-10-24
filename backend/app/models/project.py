@@ -38,6 +38,30 @@ class Shot(BaseModel):
     motion_graphic: MotionGraphic = Field(default_factory=MotionGraphic)
     asset_path: Optional[str] = None
 
+class VisualAsset(BaseModel):
+    asset_id: str
+    project_id: str
+    scene_id: Optional[str] = None
+    asset_type: Literal["footage", "image_reference", "thumbnail", "placeholder"] = "footage"
+    filename: str
+    file_path: str
+    mime_type: str = "video/mp4"
+    size_bytes: int = 0
+    width: Optional[int] = None
+    height: Optional[int] = None
+    duration_sec: Optional[float] = None
+    fps: Optional[float] = None
+    codec: Optional[str] = None
+    source_type: Literal["local_import", "generated", "placeholder"] = "local_import"
+    validation_status: Literal["valid", "invalid", "pending"] = "valid"
+    thumbnail_path: Optional[str] = None
+    thumbnail_url: Optional[str] = None
+    web_url: Optional[str] = None
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class AssetAttachRequest(BaseModel):
+    scene_id: Optional[str] = None
+
 class Scene(BaseModel):
     scene_id: str
     scene_number: int = Field(ge=1)
@@ -45,6 +69,7 @@ class Scene(BaseModel):
     narration_text: Optional[str] = ""
     target_duration_seconds: float = Field(default=4.0, ge=1.0, le=120.0)
     visual_prompt: Optional[str] = ""
+    asset_id: Optional[str] = None
     footage_path: Optional[str] = None
     narration_audio_path: Optional[str] = None
     narration_audio_duration_sec: Optional[float] = None
@@ -71,6 +96,7 @@ class SceneCreateRequest(BaseModel):
     target_duration_seconds: float = Field(default=4.0, ge=1.0, le=120.0)
     visual_prompt: Optional[str] = ""
     footage_path: Optional[str] = None
+    asset_id: Optional[str] = None
 
 class SceneUpdateRequest(BaseModel):
     title: Optional[str] = None
@@ -78,6 +104,7 @@ class SceneUpdateRequest(BaseModel):
     target_duration_seconds: Optional[float] = None
     visual_prompt: Optional[str] = None
     footage_path: Optional[str] = None
+    asset_id: Optional[str] = None
     production_status: Optional[Literal["draft", "narrated", "footage_ready", "assembled", "ready"]] = None
 
 class StoryboardReorderRequest(BaseModel):
@@ -109,6 +136,7 @@ class VideoProject(BaseModel):
     updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     settings: ProjectSettings = Field(default_factory=ProjectSettings)
     storyboard: Storyboard = Field(default_factory=Storyboard)
+    assets: List[VisualAsset] = Field(default_factory=list)
 
 class ProjectCreateRequest(BaseModel):
     title: str

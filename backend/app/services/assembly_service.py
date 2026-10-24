@@ -168,11 +168,16 @@ class AssemblyService:
         scene: Scene,
         project_title: str,
         total_scenes: int,
-        ffmpeg_bin: str
+        ffmpeg_bin: Optional[str] = None
     ) -> Path:
         """
         Renders a single scene segment normalized to 1080x1920, 30fps CFR, H.264, AAC stereo.
         """
+        bin_path = ffmpeg_bin or resolve_ffmpeg_binary()
+        if not bin_path or not os.path.exists(bin_path):
+            raise AssemblyServiceError("FFmpeg binary tidak ditemukan pada sistem.")
+        ffmpeg_bin = bin_path
+
         width = 1080
         height = 1920
         fps = 30
@@ -190,17 +195,28 @@ class AssemblyService:
 
         # Determine visual source
         has_real_footage = False
-        if scene.footage_path and os.path.isfile(scene.footage_path):
+        if scene.footage_path:
+            if not os.path.isfile(scene.footage_path):
+                raise AssemblyServiceError(
+                    f"Aset visual untuk adegan {scene.scene_number} ('{scene.title}') tidak ditemukan di disk: {scene.footage_path}"
+                )
             has_real_footage = True
 
         temp_placeholder = None
 
         if has_real_footage:
-            # Scale & crop user footage to 1080x1920 without distortion
-            video_input_args = [
-                "-stream_loop", "-1", # loop if footage is shorter than scene
-                "-i", str(scene.footage_path)
-            ]
+            # Scale & crop user footage or image to 1080x1920 without distortion
+            ext = Path(scene.footage_path).suffix.lower()
+            if ext in {".png", ".jpg", ".jpeg", ".webp"}:
+                video_input_args = [
+                    "-loop", "1",
+                    "-i", str(scene.footage_path)
+                ]
+            else:
+                video_input_args = [
+                    "-stream_loop", "-1", # loop if footage is shorter than scene
+                    "-i", str(scene.footage_path)
+                ]
             filter_v = "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1[v]"
         else:
             temp_placeholder = self.generate_scene_placeholder_card(
@@ -339,11 +355,17 @@ class AssemblyService:
         if not verification.get("valid"):
             raise AssemblyServiceError(f"Verifikasi video hasil rakitan gagal: {verification.get('error')}")
 
+        real_footage_count = sum(1 for sc in scenes if sc.footage_path and os.path.isfile(sc.footage_path))
+        placeholder_count = len(scenes) - real_footage_count
+
         return {
             "status": "success",
             "project_id": project.id,
             "project_title": project.title,
             "scenes_count": len(scenes),
+            "real_footage_scenes_count": real_footage_count,
+            "placeholder_scenes_count": placeholder_count,
+            "has_placeholders": placeholder_count > 0,
             "filename": out_filename,
             "output_path": str(final_output_path),
             "web_url": f"/api/renders/{out_filename}",

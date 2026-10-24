@@ -76,3 +76,20 @@ AI Video Studio is a high-performance local production environment for Windows, 
 - `DELETE /api/projects/{id}` — Safely deletes or archives a project.
 - `POST /api/projects/{id}/prompts/flow` — Compiles Google Flow prompts with camera/lens/lighting parameters.
 - `GET /api/projects/{id}/validate` — Performs pre-render validation checks (audio, aspect ratio, assets).
+- `GET /api/assets/{project_id}` — Lists all imported and generated assets for a project.
+- `POST /api/assets/{project_id}/import` — Ingests a local file path with validation, metadata probing, and thumbnail generation.
+- `POST /api/assets/{project_id}/upload` — Direct multipart media upload into safe project asset storage.
+- `POST /api/assets/{project_id}/{asset_id}/attach` — Links an asset to a specific storyboard scene.
+- `POST /api/assets/{project_id}/detach/{scene_id}` — Detaches an asset from a scene, reverting it to placeholder mode.
+- `DELETE /api/assets/{project_id}/{asset_id}` — Deletes asset media and thumbnail from disk and updates project state.
+- `GET /api/assets/{project_id}/{filename}` — Streams asset video or thumbnail securely with traversal protection.
+
+---
+
+## 5. Visual Asset Storage & Security Policy
+- **Isolation:** Each project maintains isolated asset storage under `backend/data/assets/{project_id}/` and `thumbnails/`.
+- **Git Safety:** Media files inside `backend/data/assets/` are ignored in `.gitignore` to prevent large binary commits.
+- **Sanitization & Traversal Guards:** Filenames and paths are sanitized using regex filtering against directory traversal attacks (`..`, illegal characters).
+- **No Remote URLs:** External URLs (`http://`, `https://`) are strictly rejected by the local asset service.
+- **Size Bounds:** Max 500 MB for video files, max 30 MB for graphic/image assets.
+

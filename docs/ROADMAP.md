@@ -38,9 +38,24 @@
 
 ---
 
-## Phase 2C: Google Flow Prompt Studio & Asset Library
-- [ ] Google Flow Prompt Studio enhancements (camera motions, lighting presets, aspect locking).
-- [ ] Local asset library for footage ingest (previewing generated clips, trimming start/end).
+## Phase 2C: Visual Asset Manager & Footage Ingestion (Completed & Verified)
+- [x] Visual Asset Model (`VisualAsset`) with UUID, project/scene binding, format validation, dimensions, duration, FPS, and timestamps (`models/project.py`).
+- [x] Secure Asset Ingestion Service (`asset_service.py`) supporting local file imports, path traversal prevention, size limits (500MB video, 30MB image), and URL rejection.
+- [x] Media metadata extraction using OpenCV `cv2.VideoCapture` and FFmpeg stream inspection.
+- [x] Automatic thumbnail generation (OpenCV first-frame extraction & Pillow resize) with streaming API endpoint.
+- [x] Scene linking & unlinking API (`POST /api/assets/{id}/{asset_id}/attach` and `/detach/{scene_id}`).
+- [x] Media file streaming API with Range support & safe path confinement (`/api/assets/{project_id}/{filename}`).
+- [x] Assembly Service integration (`assembly_service.py`):
+  - Seamless auto-scaling and aspect-preserving cropping to 1080×1920 vertical format.
+  - Video and image looping support.
+  - Explicit error handling for missing/deleted media files without silent corruption.
+  - Verification metadata tracking `real_footage_scenes_count`, `placeholder_scenes_count`, and `has_placeholders`.
+- [x] Interactive Frontend Asset Manager Modal (`AssetManagerModal.jsx`):
+  - Grid view with video/image thumbnails, metadata tags, and scene attachment selectors.
+  - In-modal media preview player for video and image verification.
+  - Dual ingestion workflows: Windows local path import and browser file upload.
+  - Storyboard scene badges (`✓ Footage Siap` vs `⚡ Mode Placeholder`) with one-click attach/detach buttons.
+- [x] 100% test pass rate across 24 backend tests and successful Vite production build.
 
 ---
 

@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function ProjectCard({ project, onViewStoryboard, onOpenPromptStudio, onDeleteProject, onOpenRender, onOpenAssembly }) {
+export default function ProjectCard({ project, onViewStoryboard, onOpenPromptStudio, onDeleteProject, onOpenRender, onOpenAssembly, onOpenAssetManager }) {
   return (
     <div className="project-card">
       <div>
@@ -34,10 +34,13 @@ export default function ProjectCard({ project, onViewStoryboard, onOpenPromptStu
             </svg>
             Storyboard
           </button>
+          <button className="btn btn-secondary" style={{ padding: '0.5rem 0.65rem', color: '#38bdf8' }} title="Pustaka Aset & Footage" onClick={() => onOpenAssetManager && onOpenAssetManager(project)}>
+            📁 Aset
+          </button>
           <button className="btn btn-primary" style={{ padding: '0.5rem 0.85rem', background: 'linear-gradient(135deg, #6366f1, #4f46e5)' }} title="Rakit Video Multi-Adegan" onClick={() => onOpenAssembly(project)}>
             🎬 Rakit
           </button>
-          <button className="btn btn-secondary" style={{ padding: '0.5rem 0.75rem', color: '#38bdf8' }} title="Prompt Studio (Google Flow)" onClick={() => onOpenPromptStudio(project.id)}>
+          <button className="btn btn-secondary" style={{ padding: '0.5rem 0.75rem', color: '#a5b4fc' }} title="Prompt Studio (Google Flow)" onClick={() => onOpenPromptStudio(project.id)}>
             Flow
           </button>
           <button className="btn btn-secondary" style={{ padding: '0.5rem 0.75rem', color: '#34d399' }} title="Render Demo Cepat" onClick={() => onOpenRender(project)}>
