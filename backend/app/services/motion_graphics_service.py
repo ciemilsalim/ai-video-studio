@@ -2,6 +2,7 @@ import os
 import re
 import shutil
 import tempfile
+import textwrap
 import subprocess
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Tuple
@@ -227,19 +228,26 @@ class MotionGraphicsService:
             )
 
         # Title
-        font_title = self._get_font(48, bold=True)
-        title_disp = title if len(title) <= 28 else title[:26] + "..."
-        draw.text((card_x + 36, card_y + 90), title_disp, fill=(248, 250, 252, alpha), font=font_title)
+        lines = textwrap.wrap(title, width=26)
+        font_size = 46 if len(lines) <= 1 and len(title) <= 22 else 38
+        font_title = self._get_font(font_size, bold=True)
+        ty = card_y + 90
+        for l in lines[:2]:
+            draw.text((card_x + 36, ty), l, fill=(248, 250, 252, alpha), font=font_title)
+            ty += font_size + 8
 
         # Subtitle
         if subtitle:
-            font_sub = self._get_font(26, bold=False)
-            sub_disp = subtitle if len(subtitle) <= 38 else subtitle[:36] + "..."
-            draw.text((card_x + 36, card_y + 170), sub_disp, fill=(148, 163, 184, alpha), font=font_sub)
+            font_sub = self._get_font(24, bold=False)
+            sub_lines = textwrap.wrap(subtitle, width=42)
+            sy = max(ty + 10, card_y + 175)
+            for sl in sub_lines[:2]:
+                draw.text((card_x + 36, sy), sl, fill=(148, 163, 184, alpha), font=font_sub)
+                sy += 30
 
         # Minimalist metadata indicator
-        font_foot = self._get_font(20, mono=True)
-        draw.text((card_x + 36, card_y + 250), "STATUS: BUKTI FORENSIK TERVERIFIKASI", fill=(100, 116, 139, alpha), font=font_foot)
+        font_foot = self._get_font(18, mono=True)
+        draw.text((card_x + 36, card_y + card_h - 40), "STATUS: BUKTI FORENSIK TERVERIFIKASI", fill=(100, 116, 139, alpha), font=font_foot)
 
     def _render_stat_card(
         self,
@@ -293,9 +301,12 @@ class MotionGraphicsService:
             draw.text((card_x + 46 + val_w, card_y + 105), unit, fill=(239, 68, 68, alpha), font=font_unit)
 
         # Label
-        font_lbl = self._get_font(28, bold=False)
-        lbl_disp = label if len(label) <= 38 else label[:36] + "..."
-        draw.text((card_x + 36, card_y + 175), lbl_disp, fill=(203, 213, 225, alpha), font=font_lbl)
+        font_lbl = self._get_font(26, bold=False)
+        lbl_lines = textwrap.wrap(label, width=45)
+        ly = card_y + 175
+        for ll in lbl_lines[:2]:
+            draw.text((card_x + 36, ly), ll, fill=(203, 213, 225, alpha), font=font_lbl)
+            ly += 30
 
         # Divider
         line_w = int((card_w - 72) * ease_in)
@@ -334,14 +345,14 @@ class MotionGraphicsService:
         description = str(content.get("description") or "")
 
         card_w = width - 140
-        card_h = 320
+        card_h = 360
         card_x = 70
         if position == "top":
             card_y = 280 + y_slide
         elif position == "bottom":
-            card_y = 1320 + y_slide
+            card_y = 1280 + y_slide
         else:
-            card_y = 820 + y_slide
+            card_y = 800 + y_slide
 
         # Card container
         bg_alpha = int(220 * (alpha / 255.0))
@@ -359,26 +370,35 @@ class MotionGraphicsService:
         draw.text((card_x + 60, card_y + 30), date_period.upper(), fill=(239, 68, 68, alpha), font=font_date)
 
         # Title
-        font_title = self._get_font(38, bold=True)
-        title_disp = event_title if len(event_title) <= 30 else event_title[:28] + "..."
-        draw.text((card_x + 36, card_y + 80), title_disp, fill=(248, 250, 252, alpha), font=font_title)
+        title_lines = textwrap.wrap(event_title, width=34)
+        font_size = 36 if len(title_lines) <= 1 else 30
+        font_title = self._get_font(font_size, bold=True)
+        ty = card_y + 78
+        for tl in title_lines[:2]:
+            draw.text((card_x + 36, ty), tl, fill=(248, 250, 252, alpha), font=font_title)
+            ty += font_size + 6
 
         # Location
+        cur_y = max(ty + 6, card_y + 140)
         if location:
-            font_loc = self._get_font(24, bold=False)
-            draw.text((card_x + 36, card_y + 145), f"LOKASI: {location}", fill=(148, 163, 184, alpha), font=font_loc)
+            font_loc = self._get_font(22, bold=False)
+            draw.text((card_x + 36, cur_y), f"LOKASI: {location}", fill=(148, 163, 184, alpha), font=font_loc)
+            cur_y += 32
 
         # Description
         if description:
             font_desc = self._get_font(22, bold=False)
-            desc_disp = description if len(description) <= 42 else description[:40] + "..."
-            draw.text((card_x + 36, card_y + 195), desc_disp, fill=(203, 213, 225, alpha), font=font_desc)
+            desc_lines = textwrap.wrap(description, width=52)
+            dy = cur_y
+            for dl in desc_lines[:2]:
+                draw.text((card_x + 36, dy), dl, fill=(203, 213, 225, alpha), font=font_desc)
+                dy += 28
 
         # Expanding accent rule
         line_w = int((card_w - 72) * ease_in)
         if line_w > 0:
             draw.line(
-                [(card_x + 36, card_y + 265), (card_x + 36 + line_w, card_y + 265)],
+                [(card_x + 36, card_y + card_h - 30), (card_x + 36 + line_w, card_y + card_h - 30)],
                 fill=(239, 68, 68, int(180 * (alpha / 255.0))),
                 width=2
             )

@@ -360,3 +360,60 @@ def test_temp_file_cleanup_on_error(temp_test_env):
             output_dir=temp_test_env["dir"],
             ffmpeg_bin="C:/non_existent_ffmpeg.exe"
         )
+
+def test_typography_multiline_wrapping_regression():
+    """
+    Regression test verifying that long titles, labels, and descriptions
+    wrap onto multiple lines without raising errors, truncating prematurely, or clipping.
+    """
+    # 1. Timeline event with long title and description
+    frame_timeline = motion_graphics_service.render_overlay_frame(
+        template_id="timeline_event",
+        content={
+            "date_or_period": "20 AGUSTUS 2024 • 14:30 WIB",
+            "event_title": "Penetrasi Lapisan Struktur Kedua Candi",
+            "location": "Zona Inti Sektor Barat Daya",
+            "description": "Ditemukan susunan batu columnar joint dengan perekat mortar purba berkadar silika tinggi."
+        },
+        position="center",
+        animation_in="fade",
+        animation_out="fade",
+        t=1.5,
+        duration=4.0
+    )
+    assert frame_timeline.size == (1080, 1920)
+    assert frame_timeline.mode == "RGBA"
+
+    # 2. Kinetic title with long title and subtitle
+    frame_title = motion_graphics_service.render_overlay_frame(
+        template_id="kinetic_title",
+        content={
+            "title": "MISTERI STRUKTUR PIRAMIDA KUNO DI NUSANTARA",
+            "subtitle": "Dokumentasi Lengkap Ekskavasi & Analisis Citra Georadar Bawah Permukaan",
+            "tag": "ARSIP FORENSIK RESMI"
+        },
+        position="center",
+        animation_in="fade",
+        animation_out="fade",
+        t=1.5,
+        duration=4.0
+    )
+    assert frame_title.size == (1080, 1920)
+
+    # 3. Stat card with long descriptive label
+    frame_stat = motion_graphics_service.render_overlay_frame(
+        template_id="stat_card",
+        content={
+            "value": "4.200",
+            "unit": "Ha",
+            "label": "Total Estimasi Area Megalitik Yang Tertimbun Sedimen Vulkanik Purba",
+            "source": "Laporan Tim Survei Geologi Nasional 2024"
+        },
+        position="bottom",
+        animation_in="fade",
+        animation_out="fade",
+        t=1.5,
+        duration=4.0
+    )
+    assert frame_stat.size == (1080, 1920)
+

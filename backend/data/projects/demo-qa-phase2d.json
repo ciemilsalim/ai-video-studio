@@ -1,0 +1,184 @@
+{
+  "id": "demo-qa-phase2d",
+  "title": "Demonstrasi Forensik Motion Graphics Phase 2D",
+  "description": "Ekskavasi Forensik Piramida Nusantara",
+  "aspect_ratio": "9:16",
+  "resolution": {
+    "width": 1080,
+    "height": 1920
+  },
+  "fps": 30,
+  "created_at": "2026-10-24T04:30:54.500757+00:00",
+  "updated_at": "2026-10-24T04:38:15.779301+00:00",
+  "settings": {
+    "voice": "id-ID-ArdiNeural",
+    "bgm_volume": 0.15,
+    "ducking_volume": 0.04,
+    "motion_graphics_style": "documentary_modern"
+  },
+  "storyboard": {
+    "version": "1.0.0",
+    "total_estimated_duration_sec": 0.0,
+    "scenes": [
+      {
+        "scene_id": "scene-1",
+        "scene_number": 1,
+        "title": "Introduksi Penemuan Arkeologi",
+        "narration_text": "Penyelidikan forensik mengungkap struktur tersembunyi jauh di bawah permukaan tanah.",
+        "target_duration_seconds": 5.5,
+        "visual_prompt": "",
+        "asset_id": null,
+        "footage_path": "D:\\laragon\\www\\ai-video-studio\\backend\\data\\assets\\demo-qa-phase2d\\bg_scene_1.png",
+        "narration_audio_path": "D:\\laragon\\www\\ai-video-studio\\backend\\data\\audio\\demo-qa-phase2d\\scene-1_narration.mp3",
+        "narration_audio_duration_sec": 4.99,
+        "production_status": "draft",
+        "motion_overlays": [
+          {
+            "overlay_id": "mgo-1-title",
+            "scene_id": "scene-1",
+            "template_id": "kinetic_title",
+            "start_time": 0.5,
+            "duration": 3.0,
+            "layer": 1,
+            "position": "center",
+            "style": {},
+            "animation_in": "fade",
+            "animation_out": "fade",
+            "content": {
+              "title": "MISTERI PIRAMIDA NUSANTARA",
+              "subtitle": "Arsip Ekskavasi & Forensik Georadar",
+              "tag": "DOKUMEN INVESTIGASI // KASUS #01"
+            },
+            "enabled": true
+          },
+          {
+            "overlay_id": "mgo-fc875ac2",
+            "scene_id": "scene-1",
+            "template_id": "stat_card",
+            "start_time": 0.0,
+            "duration": 3.0,
+            "layer": 1,
+            "position": "center",
+            "style": {},
+            "animation_in": "fade",
+            "animation_out": "fade",
+            "content": {
+              "value": "99.8",
+              "label": "Tingkat Kepastian Forensik Lapangan",
+              "unit": "Ha",
+              "source": "Laporan Satelit Forensik 2024"
+            },
+            "enabled": true
+          }
+        ],
+        "shots": []
+      },
+      {
+        "scene_id": "scene-2",
+        "scene_number": 2,
+        "title": "Anomali Seismik Bawah Permukaan",
+        "narration_text": "Sensor mendeteksi anomali struktur batu setinggi empat puluh lima meter dengan presisi tinggi.",
+        "target_duration_seconds": 6.0,
+        "visual_prompt": "",
+        "asset_id": null,
+        "footage_path": "D:\\laragon\\www\\ai-video-studio\\backend\\data\\assets\\demo-qa-phase2d\\bg_scene_2.png",
+        "narration_audio_path": "D:\\laragon\\www\\ai-video-studio\\backend\\data\\audio\\demo-qa-phase2d\\scene-2_narration.mp3",
+        "narration_audio_duration_sec": 5.42,
+        "production_status": "draft",
+        "motion_overlays": [
+          {
+            "overlay_id": "mgo-2-stat",
+            "scene_id": "scene-2",
+            "template_id": "stat_card",
+            "start_time": 0.5,
+            "duration": 3.0,
+            "layer": 1,
+            "position": "bottom",
+            "style": {},
+            "animation_in": "fade",
+            "animation_out": "fade",
+            "content": {
+              "value": "45",
+              "unit": "METER",
+              "label": "Kedalaman Ruang Anomali Megalitik",
+              "source": "Data Georadar & Tomografi 2024"
+            },
+            "enabled": true
+          }
+        ],
+        "shots": []
+      },
+      {
+        "scene_id": "scene-3",
+        "scene_number": 3,
+        "title": "Kronologi Penggalian",
+        "narration_text": "Pada tanggal dua puluh Agustus dua ribu dua puluh empat, tim peneliti membuka lapisan batu kedua.",
+        "target_duration_seconds": 6.5,
+        "visual_prompt": "",
+        "asset_id": null,
+        "footage_path": "D:\\laragon\\www\\ai-video-studio\\backend\\data\\assets\\demo-qa-phase2d\\bg_scene_3.png",
+        "narration_audio_path": "D:\\laragon\\www\\ai-video-studio\\backend\\data\\audio\\demo-qa-phase2d\\scene-3_narration.mp3",
+        "narration_audio_duration_sec": 5.69,
+        "production_status": "draft",
+        "motion_overlays": [
+          {
+            "overlay_id": "mgo-3-timeline",
+            "scene_id": "scene-3",
+            "template_id": "timeline_event",
+            "start_time": 0.5,
+            "duration": 3.0,
+            "layer": 1,
+            "position": "center",
+            "style": {},
+            "animation_in": "fade",
+            "animation_out": "fade",
+            "content": {
+              "date_or_period": "20 AGUSTUS 2024 • 14:30 WIB",
+              "event_title": "Penetrasi Lapisan Struktur Kedua",
+              "location": "Zona Inti Sektor Barat Daya",
+              "description": "Ditemukan susunan batu columnar joint dengan perekat mortar purba."
+            },
+            "enabled": true
+          }
+        ],
+        "shots": []
+      },
+      {
+        "scene_id": "scene-4",
+        "scene_number": 4,
+        "title": "Perekaman Bukti Visual Forensik",
+        "narration_text": "Kamera pemindai inframerah merekam koordinat lokasi dan mengamankan sampel batuan berharga.",
+        "target_duration_seconds": 6.0,
+        "visual_prompt": "",
+        "asset_id": null,
+        "footage_path": "D:\\laragon\\www\\ai-video-studio\\backend\\data\\assets\\demo-qa-phase2d\\bg_scene_4.png",
+        "narration_audio_path": "D:\\laragon\\www\\ai-video-studio\\backend\\data\\audio\\demo-qa-phase2d\\scene-4_narration.mp3",
+        "narration_audio_duration_sec": 5.45,
+        "production_status": "draft",
+        "motion_overlays": [
+          {
+            "overlay_id": "mgo-4-hud",
+            "scene_id": "scene-4",
+            "template_id": "investigation_hud",
+            "start_time": 0.5,
+            "duration": 3.0,
+            "layer": 1,
+            "position": "center",
+            "style": {},
+            "animation_in": "fade",
+            "animation_out": "fade",
+            "content": {
+              "coordinates_or_location": "LAT -6.9567° S, LONG 107.0543° E",
+              "evidence_code": "EVID-ARC-042",
+              "classification": "DOKUMEN RAHASIA // TINGKAT 1",
+              "timestamp_label": "REC • 00:01:24:15"
+            },
+            "enabled": true
+          }
+        ],
+        "shots": []
+      }
+    ]
+  },
+  "assets": []
+}
