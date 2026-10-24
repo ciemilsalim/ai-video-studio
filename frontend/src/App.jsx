@@ -7,6 +7,7 @@ import PromptStudioModal from './components/PromptStudioModal';
 import RenderModal from './components/RenderModal';
 import AssetManagerModal from './components/AssetManagerModal';
 import MotionOverlayModal from './components/MotionOverlayModal';
+import UserGuide from './components/UserGuide';
 import {
   fetchHealth,
   fetchProjects,
@@ -22,6 +23,7 @@ export default function App() {
   const [health, setHealth] = useState(null);
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [currentView, setCurrentView] = useState('dashboard'); // 'dashboard' | 'guide'
 
   // Modals state
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -143,35 +145,63 @@ export default function App() {
 
   return (
     <div className="app-container">
-      <Header health={health} onNewProjectClick={() => setIsCreateOpen(true)} />
+      <Header
+        health={health}
+        onNewProjectClick={() => setIsCreateOpen(true)}
+        currentView={currentView}
+        onOpenGuide={() => setCurrentView('guide')}
+        onGoDashboard={() => setCurrentView('dashboard')}
+      />
 
       <main className="main-content">
-        <section className="hero-banner">
-          <div className="hero-text">
-            <h1>Studio Produksi Video Dokumenter AI</h1>
-            <p>
-              Otomasi alur produksi video sinematik dengan visual prompts terstandarisasi untuk Google Flow,
-              naskah terstruktur, motion graphics deklaratif, dan perakitan FFmpeg 1080×1920 (9:16).
-            </p>
-          </div>
-          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-            <button
-              className="btn btn-secondary"
-              style={{ borderColor: 'var(--accent-success)', color: '#34d399' }}
-              onClick={handleOpenStandaloneRender}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polygon points="5 3 19 12 5 21 5 3"></polygon>
-              </svg>
-              Uji Render 9:16 Cepat
-            </button>
-            <button className="btn btn-primary" onClick={() => setIsCreateOpen(true)}>
-              + Mulai Proyek Baru
-            </button>
-          </div>
-        </section>
+        {currentView === 'guide' ? (
+          <UserGuide
+            onGoDashboard={() => setCurrentView('dashboard')}
+            onNewProject={() => {
+              setCurrentView('dashboard');
+              setIsCreateOpen(true);
+            }}
+            onQuickRender={() => {
+              setCurrentView('dashboard');
+              handleOpenStandaloneRender();
+            }}
+          />
+        ) : (
+          <>
+            <section className="hero-banner">
+              <div className="hero-text">
+                <h1>Studio Produksi Video Dokumenter AI</h1>
+                <p>
+                  Otomasi alur produksi video sinematik dengan visual prompts terstandarisasi untuk Google Flow,
+                  naskah terstruktur, motion graphics deklaratif, dan perakitan FFmpeg 1080×1920 (9:16).
+                </p>
+              </div>
+              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <button
+                  id="btn-hero-user-guide"
+                  className="btn btn-secondary"
+                  style={{ borderColor: 'var(--accent-cyan)', color: 'var(--accent-cyan)' }}
+                  onClick={() => setCurrentView('guide')}
+                >
+                  📖 Baca Panduan Pengguna
+                </button>
+                <button
+                  className="btn btn-secondary"
+                  style={{ borderColor: 'var(--accent-success)', color: '#34d399' }}
+                  onClick={handleOpenStandaloneRender}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                  </svg>
+                  Uji Render 9:16 Cepat
+                </button>
+                <button className="btn btn-primary" onClick={() => setIsCreateOpen(true)}>
+                  + Mulai Proyek Baru
+                </button>
+              </div>
+            </section>
 
-        <section>
+            <section>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
             <h2 style={{ fontSize: '1.25rem', fontWeight: 700 }}>Daftar Proyek Aktif</h2>
             <span style={{ fontSize: '0.85rem', color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
@@ -210,7 +240,9 @@ export default function App() {
             </div>
           )}
         </section>
-      </main>
+      </>
+    )}
+  </main>
 
       <CreateProjectModal
         isOpen={isCreateOpen}
